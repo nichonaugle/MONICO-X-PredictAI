@@ -37,7 +37,7 @@ class Server():
             port=int(self.port),
         )
         zeroconf.register_service(my_service)
-        print(f"Successfully launched mDNS as: '{self.mdns_service}'    DOUBLE CHECK!!!!")
+        print(f"Successfully launched mDNS as: '{self.mdns_service}'")
         while True:
             await asyncio.Future()
 

@@ -8,7 +8,7 @@ Building the python venv (Only done once once cloned)
 
 run the following script for windows
 
-5. venv\Scripts\activate.bat
+5. venv\Scripts\activate
 
 for mac or linux
 
