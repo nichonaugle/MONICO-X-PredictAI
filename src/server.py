@@ -33,7 +33,7 @@ class Server():
         my_service = ServiceInfo(
             self.mdns_service,
             (self.mdns_device_name + "." + self.mdns_service),
-            addresses=[socket.inet_aton("0.0.0.0")],
+            addresses=[socket.inet_aton(self.ip_addr)],
             port=int(self.port),
         )
         zeroconf.register_service(my_service)

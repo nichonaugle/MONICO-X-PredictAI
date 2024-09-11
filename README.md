@@ -1,7 +1,3 @@
-
-
-
-
 Building the python venv (Only done once once cloned)
 
 1. navigate to the predictai folder
@@ -11,6 +7,11 @@ Building the python venv (Only done once once cloned)
 4. python -m venv venv
 
 run the following script for windows
+
 5. venv\Scripts\activate.bat
+
 for mac or linux
+
  source myvenv/bin/activate
+
+6. pip install -r requirements.txt
