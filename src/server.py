@@ -4,6 +4,8 @@ import string
 import json
 import asyncio
 import websockets
+import websockets.asyncio
+import websockets.asyncio.server
 from zeroconf import IPVersion, ServiceInfo, Zeroconf
 from flask_sockets import Sockets
 from flask import Flask
@@ -31,9 +33,9 @@ class Server():
     async def launch_mdns(self):
         print("Launching mDNS service")
         my_service = ServiceInfo(
-            self.mdns_service,
-            (self.mdns_device_name + "." + self.mdns_service),
-            addresses=[socket.inet_aton(self.ip_addr)],
+            self.mdns_service,#"_http._tcp.local.",#self.mdns_service,
+            (self.mdns_device_name + "." + self.mdns_service),#"balls._http._tcp.local.",#(self.mdns_device_name + "." + self.mdns_service),
+            addresses=[socket.inet_aton("127.0.0.1")],
             port=int(self.port),
         )
         zeroconf.register_service(my_service)
@@ -42,27 +44,29 @@ class Server():
             await asyncio.Future()
 
     async def launch_socket_server(self):
-        server = await websockets.serve(self.client_handler, self.ip_addr, int(self.port))
-        print(f"WebSocket server started at ws://{self.ip_addr}:{self.port}")
-        await server.wait_closed()
+        async with websockets.asyncio.server.serve(self.client_handler, self.ip_addr, int(self.port)):
+            print(f"WebSocket server started at ws://{self.ip_addr}:{self.port}")
+            await asyncio.get_running_loop().create_future()
+        print("Websockets closed!")
 
     async def start_sending_data_to_client(self, ws, client_id):
-        while not ws.closed and self.clients[client_id]["state"] == "start":
+        if ws and self.clients[client_id]["state"] == "start":
             ### SEND TEST DATA ###
             sensor_data = {
                 'temperature': random.uniform(20.0, 30.0),
                 'humidity': random.uniform(30.0, 50.0)
             }
             await ws.send(json.dumps(sensor_data))
-            await asyncio.sleep(1)
 
+    # run "python -m websockets ws://192.168.56.1:8024" to test a client interface
+    #TODO Fix the callbacks for recieving serial data to handle multiple commands
     async def client_handler(self, ws):
         print("New client connected")
         client_id = id(ws)
         self.clients[client_id] = {"client-id": client_id, "state": "stop"}
         try:
-            while not ws.closed:
-                message = await ws.receive()
+            while ws:
+                message = await ws.recv()
                 if message == "start":
                     self.clients[client_id]["state"] = "start"
                     await self.start_sending_data_to_client(ws, client_id)
@@ -72,7 +76,7 @@ class Server():
             print("Client disconnected")
         finally:
             del self.clients[client_id]
-
+            
     def get_ip_addr(self) -> str:
         hostname = socket.gethostname()
         local_ip = socket.gethostbyname(hostname)
