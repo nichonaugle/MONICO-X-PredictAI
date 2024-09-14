@@ -16,9 +16,6 @@ To clone the project repository, run the following commands in your terminal:
 ```bash
 git clone https://github.com/nichonaugle/MONICO-X-PredictAI
 cd MONICO-X-PREDICTAI
-python -m venv venv
-venv/Scripts/activate
-pip install -r requirements.txt
 ```
 
 ### 2. Setting Up the Virtual Environment
@@ -39,7 +36,7 @@ Then create and activate the virtual environment:
 For Windows:
 ```bash
 python -m venv venv
-venv\Scripts\activate
+venv/Scripts/activate
 ```
 
 For macOS/Linux:
