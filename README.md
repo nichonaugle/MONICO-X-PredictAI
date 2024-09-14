@@ -1,4 +1,4 @@
-# PredictAI
+# MONICO-X-PredictAI
 
 ## Table of Contents
 1. [Python Enviornment Setup and API](#python-enviornment-setup)
