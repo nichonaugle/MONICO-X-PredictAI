@@ -1,7 +1,7 @@
 # PredictAI
 
 ## Table of Contents
-1. [Python Enviornment Setup and API](#python-api-setup)
+1. [Python Enviornment Setup and API](#python-enviornment-setup)
 2. [Machine Learning Model](#machine-learning-model)
 3. [Data Management and Sorting for ML Training](#data-management-and-sorting-for-ml-training)
 
