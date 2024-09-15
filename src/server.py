@@ -47,29 +47,28 @@ class Server():
         async with websockets.asyncio.server.serve(self.client_handler, self.ip_addr, int(self.port)):
             print(f"WebSocket server started at ws://{self.ip_addr}:{self.port}")
             await asyncio.get_running_loop().create_future()
-        print("Websockets closed!")
 
     async def start_sending_data_to_client(self, ws, client_id):
-        if ws and self.clients[client_id]["state"] == "start":
+        while ws and self.clients[client_id]["state"] == "start":
             ### SEND TEST DATA ###
             sensor_data = {
                 'temperature': random.uniform(20.0, 30.0),
                 'humidity': random.uniform(30.0, 50.0)
             }
             await ws.send(json.dumps(sensor_data))
+            await asyncio.sleep(1)
 
     # run "python -m websockets ws://192.168.56.1:8024" to test a client interface
-    #TODO Fix the callbacks for recieving serial data to handle multiple commands
+    #TODO Add API callbacks for recieving serial data to handle multiple commands
     async def client_handler(self, ws):
         print("New client connected")
         client_id = id(ws)
-        self.clients[client_id] = {"client-id": client_id, "state": "stop"}
+        self.clients[client_id] = {"client-id": client_id, "state": "stop", "sending_task": None}
         try:
-            while ws:
-                message = await ws.recv()
+            async for message in ws:
                 if message == "start":
                     self.clients[client_id]["state"] = "start"
-                    await self.start_sending_data_to_client(ws, client_id)
+                    self.clients[client_id]["sending_task"] = asyncio.create_task(self.start_sending_data_to_client(ws, client_id))
                 elif message == "stop":
                     self.clients[client_id]["state"] = "stop"
         except websockets.exceptions.ConnectionClosed:
