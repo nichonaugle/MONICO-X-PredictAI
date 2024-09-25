@@ -68,3 +68,21 @@ def get_device_info():
 def get_classification_averaging_period():
     json_response = {"Data Averaging Interval": "5m"}
     return json_response
+
+@app.get("/ai/retrain_model")
+def get_classification_averaging_period():
+    json_response = {"Data Averaging Interval": "5m"}
+    return json_response
+
+@app.get("/ai/prediction_run_state")
+def get_classification_averaging_period():
+    json_response = {"Data Averaging Interval": "5m"}
+    return json_response
+
+@app.get("/ai/prediction_run/{interval}/{timeout}")
+def get_classification_averaging_period():
+    json_response = {
+        "Data Prediction Interval Received": interval,
+        "Data Prediction Timeout Received": timeout
+    }
+    return json_response
