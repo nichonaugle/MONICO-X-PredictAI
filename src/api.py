@@ -15,10 +15,9 @@ FOR API
 
 
 """
-import asyncio
-from typing import Union
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from pydantic import BaseModel
+from server import DeviceServer
+import json
 
 class ConnectionManager:
     def __init__(self):
@@ -40,6 +39,7 @@ class ConnectionManager:
 
 app = FastAPI()
 manager = ConnectionManager()
+local_server = DeviceServer()
 
 @app.websocket("/ws")
 async def subscribe_data_stream(websocket: WebSocket):
@@ -61,7 +61,24 @@ def get_device_active_tasks():
 
 @app.get("/device/info")
 def get_device_info():
-    json_response = {"Name": "Test"}
+    clients_info = []
+    
+    counter = 0
+    for connection in manager.active_connections:
+        # Assuming each WebSocket has an 'address' property
+        clients_info.append({
+            'client_address': manager.active_connections[counter] # or any other identifying info
+        })
+        counter = counter + 1
+
+    json_response = {
+        "Name": "Test",
+        "IP Address": f"{local_server.ip_addr}",
+        "Server Port": f"{local_server.port}",
+        "mDNS Port": f"{local_server.mdns_port}",
+        "mDNS Service": f"{local_server.mdns_service}",
+        "WebSocket Clients": json.dumps(clients_info)
+        }
     return json_response
 
 @app.get("/classification/averaging-interval-period")

@@ -7,14 +7,12 @@ import websockets
 import websockets.asyncio
 import websockets.asyncio.server
 from zeroconf import IPVersion, ServiceInfo, Zeroconf
-import api
 
 zeroconf = Zeroconf(ip_version=IPVersion.All)
 
-class Server():
+class DeviceServer():
     def __init__(self):
         self.ip_addr = self.get_ip_addr()
-        self.clients = {}
         self.port = self.get_websocket_server_port()
         self.mdns_device_name = self.get_mdns_device_name()
         self.mdns_service = self.get_mdns_service_name()
@@ -31,7 +29,7 @@ class Server():
         my_service = ServiceInfo(
             self.mdns_service,
             (self.mdns_device_name + "." + self.mdns_service),
-            addresses=[socket.inet_aton("127.0.0.1")],
+            addresses=[socket.inet_aton(str(self.ip_addr))],
             port=int(self.port),
         )
         zeroconf.register_service(my_service)
@@ -40,9 +38,16 @@ class Server():
             await asyncio.Future()
 
     def get_ip_addr(self) -> str:
-        hostname = socket.gethostname()
-        local_ip = socket.gethostbyname(hostname)
-        return local_ip
+        try:
+            # Create a socket connection to an external address
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            # Connect to an external address (this doesn't actually send packets)
+            s.connect(("8.8.8.8", 80))  # Google's public DNS
+            ip_address = s.getsockname()[0]
+            s.close()
+            return ip_address
+        except Exception as e:
+            return str(e)
 
     def get_mdns_device_name(self) -> str:
         with open("./server_config.json", "r+") as f:
