@@ -16,7 +16,6 @@ class DeviceServer():
         self.port = self.get_websocket_server_port()
         self.mdns_device_name = self.get_mdns_device_name()
         self.mdns_service = self.get_mdns_service_name()
-        self.mdns_port = "5353"
 
     # Tested
     async def start(self):
@@ -26,11 +25,14 @@ class DeviceServer():
     # Tested
     async def launch_mdns(self):
         print("Launching mDNS service")
+        desc = {"API": f"{self.ip_addr}:{self.port}/docs"}
         my_service = ServiceInfo(
             self.mdns_service,
             (self.mdns_device_name + "." + self.mdns_service),
             addresses=[socket.inet_aton(str(self.ip_addr))],
             port=int(self.port),
+            properties=desc,
+            server=f"{self.mdns_device_name}.local."
         )
         zeroconf.register_service(my_service)
         print(f"Successfully launched mDNS as: '{self.mdns_service}'")

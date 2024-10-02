@@ -75,7 +75,6 @@ def get_device_info():
         "Name": "Test",
         "IP Address": f"{local_server.ip_addr}",
         "Server Port": f"{local_server.port}",
-        "mDNS Port": f"{local_server.mdns_port}",
         "mDNS Service": f"{local_server.mdns_service}",
         "WebSocket Clients": json.dumps(clients_info)
         }
