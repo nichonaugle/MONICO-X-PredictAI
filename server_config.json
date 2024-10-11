@@ -1,5 +1,6 @@
 {
     "MDNS_DEVICE_NAME": "predictai-B5SBS",
-    "MDNS_SERVICE_NAME": "_predictai-ws._tcp.local.",
-    "WEBSOCKET_SERVER_PORT": "8025"
+    "MDNS_SERVICE_TYPE": "_predictai-ws._tcp.local.",
+    "MDNS_SERVICE_NAME": "Monico PredictAI Hub",
+    "SERVER_PORT": "80"
 }
