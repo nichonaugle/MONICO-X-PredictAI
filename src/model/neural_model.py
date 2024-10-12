@@ -11,8 +11,6 @@ from tensorflow.keras.layers import LSTM, Dense, Dropout
 # 2 Convert the DataFrame to a numpy array once the data is ready for training.
 # 3 Feed the numpy array to the TensorFlow model for training
 
-
-
 def my_model(time_steps, num_features):
     # Define the Sequential model
     model = Sequential([
@@ -54,7 +52,3 @@ def add_time_till_failure(csv_file_path, save_to_csv=False, output_file='data_wi
         df.to_csv(output_file, index=False)
 
     return df
-
-
-
-
