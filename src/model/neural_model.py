@@ -1,57 +1,139 @@
 import pandas as pd
+import sklearn
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout
 
-# matrices is row x column
-#print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
-# 1 Preprocess your data using a pandas DataFrame.
-# 2 Convert the DataFrame to a numpy array once the data is ready for training.
-# 3 Feed the numpy array to the TensorFlow model for training
+file_path = r"D:\UnzippedMonicoData\2023\Export_20230102T000000_20230102T235959.csv"
+features = ['0718.1st_Stage_A_Discharge_Pressure','0718.1st_Stage_A_Suction_Pressure','0718.Acceleration_Ramp_Rate','0718.Actual_Air_Fuel_Ratio',
+                   '0718.Actual_Engine_Timing','0718.Actual_Intake_Manifold_Air_Pressure','0718.Air_to_Fuel_Differential_Pressure','0718.Average_Combustion_Time',
+                   '0718.Choke_Compensation_Percentage','0718.Choke_Gain_Percentage','0718.Choke_Position_Command','0718.Choke_Stability_Percentage','0718.Compressor_Oil_Pressure',               
+                   '0718.Compressor_Oil_Temperature','0718.Crankcase_Air_Pressure','0718.Crank_Terminate_Speed_Setpoint','0718.Cylinder_01_Detonation_Level','0718.Cylinder_01_Filtered_Combustion_Time',
+                   '0718.Cylinder_01_Ignition_Timing','0718.Cylinder_01_Transformer_Secondary_Output','0718.Cylinder_01_Unfiltered_Combustion_Time','0718.Cylinder_02_Detonation_Level','0718.Cylinder_02_Filtered_Combustion_Time',
+                   '0718.Cylinder_02_Ignition_Timing','0718.Cylinder_02_Transformer_Secondary_Output','0718.Cylinder_02_Unfiltered_Combustion_Time','0718.Cylinder_03_Detonation_Level','0718.Cylinder_03_Filtered_Combustion_Time',
+                   '0718.Cylinder_03_Ignition_Timing','0718.Cylinder_03_Transformer_Secondary_Output','0718.Cylinder_03_Unfiltered_Combustion_Time','0718.Cylinder_04_Detonation_Level','0718.Cylinder_04_Filtered_Combustion_Time',
+                   '0718.Cylinder_04_Ignition_Timing','0718.Cylinder_04_Transformer_Secondary_Output','0718.Cylinder_04_Unfiltered_Combustion_Time','0718.Cylinder_05_Detonation_Level','0718.Cylinder_05_Filtered_Combustion_Time',
+                   '0718.Cylinder_05_Ignition_Timing','0718.Cylinder_05_Transformer_Secondary_Output','0718.Cylinder_05_Unfiltered_Combustion_Time','0718.Cylinder_06_Detonation_Level','0718.Cylinder_06_Filtered_Combustion_Time',
+                   '0718.Cylinder_06_Ignition_Timing','0718.Cylinder_06_Transformer_Secondary_Output','0718.Cylinder_06_Unfiltered_Combustion_Time','0718.Cylinder_07_Detonation_Level','0718.Cylinder_07_Filtered_Combustion_Time',
+                   '0718.Cylinder_07_Ignition_Timing','0718.Cylinder_07_Transformer_Secondary_Output','0718.Cylinder_07_Unfiltered_Combustion_Time','0718.Cylinder_08_Detonation_Level','0718.Cylinder_08_Filtered_Combustion_Time',
+                   '0718.Cylinder_08_Ignition_Timing','0718.Cylinder_08_Transformer_Secondary_Output','0718.Cylinder_08_Unfiltered_Combustion_Time','0718.Cylinder_09_Detonation_Level','0718.Cylinder_09_Filtered_Combustion_Time',
+                   '0718.Cylinder_09_Ignition_Timing','0718.Cylinder_09_Transformer_Secondary_Output','0718.Cylinder_09_Unfiltered_Combustion_Time','0718.Cylinder_10_Detonation_Level','0718.Cylinder_10_Filtered_Combustion_Time',
+                   '0718.Cylinder_10_Ignition_Timing','0718.Cylinder_10_Transformer_Secondary_Output','0718.Cylinder_10_Unfiltered_Combustion_Time','0718.Cylinder_11_Detonation_Level','0718.Cylinder_11_Filtered_Combustion_Time',
+                   '0718.Cylinder_11_Ignition_Timing','0718.Cylinder_11_Transformer_Secondary_Output','0718.Cylinder_11_Unfiltered_Combustion_Time','0718.Cylinder_12_Detonation_Level','0718.Cylinder_12_Filtered_Combustion_Time',
+                   '0718.Cylinder_12_Ignition_Timing','0718.Cylinder_12_Transformer_Secondary_Output','0718.Cylinder_12_Unfiltered_Combustion_Time',
+                   '0718.Cylinder_1_A_Discharge_Temperature','0718.Cylinder_1_Rodload_Compression','0718.Cylinder_1_Rodload_Tension',
+                   '0718.Cylinder_2_A_Discharge_Temperature','0718.Cylinder_2_Rodload_Compression','0718.Cylinder_2_Rodload_Tension',
+                   '0718.Cylinder_3_A_Discharge_Temperature','0718.Cylinder_3_Rodload_Compression','0718.Cylinder_3_Rodload_Tension',
+                   '0718.Cylinder_4_A_Discharge_Temperature','0718.Cylinder_4_Rodload_Compression','0718.Cylinder_4_Rodload_Tension',
+                   '0718.Desired_Air_Fuel_Ratio','0718.Desired_Combustion_Time','0718.Desired_Engine_Exhaust_Port_Temperature','0718.Desired_Engine_Speed','0718.Desired_Intake_Manifold_Air_Pressure','0718.Engine_Average_Exhaust_Port_Temperature',
+                   '0718.Engine_Coolant_Pressure','0718.Engine_Coolant_Temperature','0718.Engine_Cylinder_01_Exhaust_Port_Temp','0718.Engine_Cylinder_02_Exhaust_Port_Temp','0718.Engine_Cylinder_03_Exhaust_Port_Temp',
+                   '0718.Engine_Cylinder_04_Exhaust_Port_Temp','0718.Engine_Cylinder_05_Exhaust_Port_Temp','0718.Engine_Cylinder_06_Exhaust_Port_Temp','0718.Engine_Cylinder_07_Exhaust_Port_Temp','0718.Engine_Cylinder_08_Exhaust_Port_Temp','0718.Engine_Cylinder_09_Exhaust_Port_Temp',
+                   '0718.Engine_Cylinder_10_Exhaust_Port_Temp','0718.Engine_Cylinder_11_Exhaust_Port_Temp','0718.Engine_Cylinder_12_Exhaust_Port_Temp','0718.Engine_Load_Factor','0718.Engine_Oil_Filter_Differential_Pressure','0718.Engine_Oil_Pressure',
+                   '0718.Engine_Oil_Temperature','0718.Engine_Oil_to_Engine_Coolant_Differential_Temperature','0718.Engine_Overcrank_Time','0718.Engine_Prelube_Time_Out_Period','0718.Engine_Purge_Cycle_Time','0718.Engine_Speed','0718.Eng_Left_Catalyst_Differential_Pressure',
+                   '0718.Eng_Left_Post-Catalyst_Temperature','0718.Eng_Left_Pre-Catalyst_Temperature','0718.Eng_Right_Catalyst_Differential_Pressure','0718.Eng_Right_Post-Catalyst_Temperature','0718.Eng_Right_Pre-Catalyst_Temperature','0718.First_Desired_Timing',
+                   '0718.Frame_Main_Bearing_1_Temperature','0718.Frame_Main_Bearing_2_Temperature','0718.Frame_Main_Bearing_3_Temperature','0718.Frame_Main_Bearing_4_Temperature','0718.Fuel_Position_Command','0718.Fuel_Quality','0718.Fuel_Temperature','0718.Gas_Fuel_Correction_Factor',
+                   '0718.Gas_Fuel_Flow','0718.Gas_Specific_Gravity','0718.Governor_Compensation_Percentage','0718.Governor_Gain_Percentage','0718.Governor_Stability_Percentage','0718.Inlet_Manifold_Air_Pressure','0718.Intake_Manifold_Air_Flow','0718.Intake_Manifold_Air_Temperature',
+                   '0718.Left_Bank_Average_Combustion_Time','0718.Left_Bank_Exhaust_Port_Temp','0718.Left_Bank_Turbine_Inlet_Temp','0718.Left_Bank_Turbine_Outlet_Temp','0718.Low_Idle_Speed','0718.Maximum_Choke_Position','0718.Maximum_Engine_High_Idle_Speed','0718.mCore_Heartbeat','0718.Minimum_High_Engine_Idle_Speed',
+                   '0718.Right_Bank_Average_Combustion_Time','0718.Right_Bank_Exhaust_Port_Temp','0718.Right_Bank_Turbine_Inlet_Temp','0718.Right_Bank_Turbine_Outlet_Temp','0718.Second_Desired_Timing','0718.Speed','0718.System_Battery_Voltage','0718.Total_Crank_Cycle_Time','0718.Total_Operating_Hours',
+                   '0718.Unfiltered_Engine_Oil_Pressure','0718.Wastegate_Compensation_Percentage','0718.Wastegate_Gain_Percentage','0718.Wastegate_Position_Command','0718.Wastegate_Stability_Percentage', '0718.Controller_Operating_Hours'
+                  ]
 
 def create_model(time_steps, num_features):
-    # Define the Sequential model
+    # Define Sequential model
     model = Sequential([
         LSTM(units=64, activation='tanh', input_shape=(time_steps, num_features), return_sequences=True),
         Dropout(0.2),
         LSTM(units=32, activation='tanh'),
         Dropout(0.2),
-        Dense(units=1)  # Output layer for regression
+        Dense(units=1)  
     ])
 
     # Compile the model
     model.compile(optimizer='adam', loss='mean_squared_error')
 
-    # Return the model
+    # Return model
     return model
 
 def run_model() -> str:
     return {"Model Run Output": "TEST"}
 
-def add_time_till_failure(csv_file_path, save_to_csv=False, output_file='data_with_time_till_failure.csv'):
-    df = pd.read_csv(csv_file_path)
+def time_till_next_failure(csv_file_path, scaled_features):
+    # Read csv into pandas data frame and fix the Active Codes dtype
+    df = pd.read_csv(csv_file_path, encoding = 'utf-16', dtype = {'Ramsey C4701E.Engine Active Codes': str})
+    df['Ramsey C4701E.Engine Active Codes'] = df['Ramsey C4701E.Engine Active Codes'].fillna('None')
     # Ensure the timestamp is in a datetime format
-    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    df['Timestamp'] = pd.to_datetime(df['Timestamp'])
+    df.set_index('Timestamp', inplace=True)
+    # Drop non numeric columns for averaging
+    numeric_col = df.select_dtypes(include='number').columns
+    df = df[numeric_col].resample('15s').mean()
+    # Apply scaling
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    df[scaled_features] = df[scaled_features].ffill()
+    df[scaled_features] = scaler.fit_transform(df[scaled_features])
     # Initialize a new column for time till next failure
-    df['time_till_failure'] = None
+    time_till_failure = [-1.0] * len(df)
     # Find indices where failure occurs
-    failure_indices = df[df['failure'] == 1].index
-    # Loop through the dataframe to fill in the time till next failure
+    failure_indices = df[df['Ramsey C4701E.Fault Relay'] == 1].index
+    # Loop through data frame
     for i in range(len(df)):
-        future_failures = failure_indices[failure_indices > i]
+        # Get timestamp of current row 
+        current_timestamp = df.index[i]
+        # All future failures after the the rows index
+        future_failures = failure_indices[failure_indices > current_timestamp]
         if not future_failures.empty:
+            # Find the next failure
             next_failure_index = future_failures.min()
-            time_difference = (df.loc[next_failure_index, 'timestamp'] - df.loc[i, 'timestamp']).total_seconds() / 3600  
-            df.loc[i, 'time_till_failure'] = time_difference
-        else:
-            df.loc[i, 'time_till_failure'] = None  
-    # Placeholder value
-    df['time_till_failure'].fillna(-1, inplace=True)
-
-    # Save the modified DataFrame back to CSV
-    if save_to_csv:
-        df.to_csv(output_file, index=False)
-
+            # Caluclate the difference in hours
+            time_difference = (next_failure_index - current_timestamp).total_seconds() / 3600
+            time_till_failure[i] = time_difference
+          
+    # Use head to display results to verify
+    df = pd.concat([df, pd.Series(time_till_failure, index=df.index, name='time_till_failure')], axis=1)
+    print(df[[ 'time_till_failure', '0718.1st_Stage_A_Discharge_Pressure']].head(20))
     return df
+
+def sequence_batch_generator(df, selected_features, target, sequence_length, batch_size):
+    # Calculate total number of batches
+    num_batches = (len(df) - sequence_length) // batch_size
+    # Loop over each batch
+    for batch_idx in range(num_batches):
+        sequences = []
+        targets = []
+        # Loop over each sequence within the batch
+        for i in range(batch_size):
+            start_idx = batch_idx * batch_size + i
+            end_idx = start_idx + sequence_length
+            if end_idx < len(df):
+                seq = df.iloc[start_idx:end_idx][selected_features].values
+                label = df.iloc[end_idx][target]
+                sequences.append(seq)
+                targets.append(label)
+        # Convert to numpy arrays and yield
+        yield np.array(sequences), np.array(targets)
+
+
+df = time_till_next_failure(file_path, features)
+# Example usage of the generator:
+target = ['time_till_failure']
+batch_size = 16
+sequence_length = 50
+steps_per_epoch = (len(df) - sequence_length) // batch_size
+batch_generator = sequence_batch_generator(df, features, target, sequence_length, batch_size)
+
+model = create_model(sequence_length, len(features))
+model.compile(optimizer='adam', loss='mean_squared_error')
+# Print the model architecture
+X_batch, y_batch = next(batch_generator)
+print("X_batch shape:", X_batch.shape)
+print("y_batch shape:", y_batch.shape)
+print("Sample y_batch values:", y_batch[:10])
+
+model.summary()
+model.fit(batch_generator, 
+          steps_per_epoch=steps_per_epoch, 
+          epochs=10)  # Adjust the number of epochs as needed
