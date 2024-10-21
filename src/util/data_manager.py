@@ -2,6 +2,21 @@ import pandas as pd
 import sys
 from datetime import datetime
 
+# df = pandas.read_csv(filename)  #reading the source data file
+# df2 = df.groupby('TimeStamp').mean() #calculating the mean of the data depending on the Timestamp
+# df2.to_csv("C:/Users/digvi/OneDrive/Desktop/ECEN 403/C4701 1 Day Data Output.csv") #exporting the new file into a csv file
+
+# print(df2.head())
+
+# df2 = df['TimeStamp']
+# df3 = df2.apply(lambda x:datetime.strptime(x, '%m/%d/%Y %H:%M').timestamp()) ## changing the timestamp into a number
+# df2.head(70)
+# df2.apply(date.fromtimestamp)
+
+# df['TimeStamp'] = df3//300
+# df.head(10)
+# df.groupby('TimeStamp').mean()
+
 def preprocess(file_name, new_file_name, encodings):
     for encoding in encodings:
         try:
