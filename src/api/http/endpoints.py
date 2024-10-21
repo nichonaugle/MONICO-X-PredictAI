@@ -36,7 +36,7 @@ def get_classification_averaging_period():
     return json_response
 
 @router.get("/ai/prediction_run/{interval}/{timeout}")
-def get_classification_averaging_period():
+def get_classification_averaging_period(interval: str, timeout: int):
     json_response = {
         "Data Prediction Interval Received": interval,
         "Data Prediction Timeout Received": timeout
