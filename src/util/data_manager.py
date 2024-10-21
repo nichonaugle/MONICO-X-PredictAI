@@ -1,77 +1,48 @@
-import pandas
-import argparse
+import pandas as pd
 import sys
-import datetime
-from datetime import date, datetime
-import os
+from datetime import datetime
 
-cwd = os.getcwd()
-DEFAULT_FILENAME = f"{cwd}/data/test_data.csv"
-'''
-# Get parsed passed in arguments.
-parser = argparse.ArgumentParser(
-    description="Data Manager"
-)
-
-parser.add_argument(
-    "--input-file-path",
-    type=str,
-    default=DEFAULT_FILENAME,
-    help=f"Input fiolename to parse. Defaults to: {DEFAULT_FILENAME}",
-)
-
-args = parser.parse_args()
-'''
-
-# df = pandas.read_csv(filename)  #reading the source data file
-# df2 = df.groupby('TimeStamp').mean() #calculating the mean of the data depending on the Timestamp
-# df2.to_csv("C:/Users/digvi/OneDrive/Desktop/ECEN 403/C4701 1 Day Data Output.csv") #exporting the new file into a csv file
-
-# print(df2.head())
-
-# df2 = df['TimeStamp']
-# df3 = df2.apply(lambda x:datetime.strptime(x, '%m/%d/%Y %H:%M').timestamp()) ## changing the timestamp into a number
-# df2.head(70)
-# df2.apply(date.fromtimestamp)
-
-# df['TimeStamp'] = df3//300
-# df.head(10)
-# df.groupby('TimeStamp').mean()
-
-def preprocess(file_name, test_filename):
-    with open(file_name) as f1, open(test_filename, "w") as f2: 
-        for line in f1:
-            line = line.replace('"', "") #takes in the file and removes the double quotes in each line
-            f2.write(line) # writes the new file in f2
+def preprocess(file_name, new_file_name, encodings):
+    for encoding in encodings:
+        try:
+            with open(file_name, 'r', encoding=encoding) as f1, open(new_file_name, 'w', encoding="utf-8") as f2:
+                for line in f1:
+                    line = line.replace('"', "")  # Remove double quotes in each line
+                    f2.write(line)  # Write the new line to the new file
+            return
+        except UnicodeDecodeError:
+            continue
+    raise UnicodeDecodeError(f"Unable to read the file {file_name} with provided encodings.")
 
 def print_usage():
     print(f"Usage: {sys.argv[0]} <input_filename> <output_filename> <duration in seconds>")
 
-# duration should be in seconds
+def read_csv_with_fallback(filename, encodings):
+    for encoding in encodings:
+        try:
+            return pd.read_csv(filename, encoding=encoding)
+        except UnicodeDecodeError:
+            continue
+    raise UnicodeDecodeError(f"Unable to read the file {filename} with provided encodings.")
+
 def average_data(input_filename, output_filename, duration_user):
-    df = pandas.read_csv(input_filename, encoding="cp1252")
-    df2 = df['TimeStamp'].apply(lambda x:datetime.strptime(x, '%Y/%m/%d %H:%M').timestamp()) # changing the timestamp into a number
-    df['TimeStamp'] = (df2 // duration_user) * duration_user # retrun an integer instead of floating point ## 19//5 = 3 and 3*5 = 15
-    print(df['TimeStamp'])
-    df3 = df.groupby('TimeStamp', as_index = False).mean() # calculating the mean
-    df3['TimeStamp'] = df3['TimeStamp'].apply(lambda x:datetime.fromtimestamp(x).strftime('%m/%d/%Y %H:%M')) #converts the number back into timestamp
-    df3.to_csv(output_filename)
+    encodings = ["utf-8", "utf-16", "cp1252"]
+    df = read_csv_with_fallback(input_filename, encodings)
+    df['Timestamp'] = df['Timestamp'].apply(lambda x: datetime.strptime(x, '%Y-%m-%dT%H:%M:%S').timestamp())  # Convert the timestamp into a number
+    df['Timestamp'] = (df['Timestamp'] // duration_user) * duration_user  # Round down to nearest multiple of duration_user
+    df_avg = df.groupby('Timestamp', as_index=False).mean()  # Calculate the mean
+    df_avg['Timestamp'] = df_avg['Timestamp'].apply(lambda x: datetime.fromtimestamp(x).strftime('%Y-%m-%dT%H:%M:%S'))  # Convert the number back into timestamp
+    df_avg.to_csv(output_filename, index=False)  # Save the result to CSV
 
-if __name__ == '__main__': ## if running from command line
-    if len(sys.argv) != 4:
-        print_usage()
-        sys.exit(1)
+if __name__ == "__main__":
+    input_filename = r"C:\Users\digvi\OneDrive\Desktop\ECEN 403\Export_20220111T000000_20220111T235959.csv"
+    output_filename = input_filename + ".out.csv"
+    duration_user = 300  # Duration in seconds
 
-    input_filename = sys.argv[1]
-    print(input_filename)
-    output_filename = sys.argv[2]
-    print(output_filename)
-    duration_user = int(sys.argv[3]) ## classify as integer
-    print(duration_user)
+    new_input_filename = input_filename + ".new.csv"  # New CSV file after preprocessing
 
-    test_filename = "test.csv" ## will create a new csv file
-    preprocess(input_filename, test_filename) 
-    timestamp_test = "2022-01-01T00:00:00"
-    print(datetime.strptime(timestamp_test, '%Y/%m/%d %H:%M').timestamp())
-    #average_data(test_filename, output_filename, duration_user)
-    # average_data(input_filename, output_filename, duration_user)
+    encodings = ["utf-8", "utf-16", "cp1252"]
+    preprocess(input_filename, new_input_filename, encodings)  # Preprocess the input file
+    average_data(new_input_filename, output_filename, duration_user)  # Calculate the average data
+
+    print(f"Processed data saved to {output_filename}")
