@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import sklearn
 import numpy as np
@@ -45,10 +46,10 @@ features = ['0718.1st_Stage_A_Discharge_Pressure','0718.1st_Stage_A_Suction_Pres
 def create_model(time_steps, num_features):
     # Define Sequential model
     model = Sequential([
-        LSTM(units=64, activation='tanh', input_shape=(time_steps, num_features), return_sequences=True),
-        Dropout(0.2),
-        LSTM(units=32, activation='tanh'),
-        Dropout(0.2),
+        LSTM(units=128, activation='tanh', input_shape=(time_steps, num_features), return_sequences=True),
+        Dropout(0.4),
+        LSTM(units=64, activation='tanh'),
+        Dropout(0.4),
         Dense(units=1)  
     ])
 
@@ -70,7 +71,7 @@ def time_till_next_failure(csv_file_path, scaled_features):
     df.set_index('Timestamp', inplace=True)
     # Drop non numeric columns for averaging
     numeric_col = df.select_dtypes(include='number').columns
-    df = df[numeric_col].resample('15s').mean()
+    df = df[numeric_col].resample('10s').mean()
     # Apply scaling
     scaler = MinMaxScaler(feature_range=(0, 1))
     df[scaled_features] = df[scaled_features].ffill()
@@ -99,30 +100,60 @@ def time_till_next_failure(csv_file_path, scaled_features):
 
 def sequence_batch_generator(df, selected_features, target, sequence_length, batch_size):
     # Calculate total number of batches
-    num_batches = (len(df) - sequence_length) // batch_size
-    # Loop over each batch
-    for batch_idx in range(num_batches):
-        sequences = []
-        targets = []
-        # Loop over each sequence within the batch
+    num_batches = (len(df) - sequence_length) // (batch_size)
+    while True:
+    # Loop over batches
+        for batch_idx in range(num_batches):
+            sequences = []
+            targets = []
+        # Generate sequences for each batch
         for i in range(batch_size):
             start_idx = batch_idx * batch_size + i
             end_idx = start_idx + sequence_length
+            # Check for valid range and append sequence and tagrgets to list
             if end_idx < len(df):
                 seq = df.iloc[start_idx:end_idx][selected_features].values
-                label = df.iloc[end_idx][target]
+                label = df.iloc[end_idx][target].values[0]  
                 sequences.append(seq)
                 targets.append(label)
-        # Convert to numpy arrays and yield
-        yield np.array(sequences), np.array(targets)
+            yield np.array(sequences), np.array(targets)
+
+def train_on_file(model, csv_file_path, selected_features, target, sequence_length, batch_size):
+   # Load data
+    df = time_till_next_failure(csv_file_path, selected_features)
+
+    # Generate batches using the generator
+    batch_gen = sequence_batch_generator(df, selected_features, target, sequence_length, batch_size)
+    steps_per_epoch = (len(df) - sequence_length) // (batch_size)
+
+    # Train the model on this file's data
+    model.fit(
+        batch_gen,
+        steps_per_epoch=steps_per_epoch,
+        epochs=1,  # Use only one epoch per file for incremental training
+        verbose=1,
+        reset_metrics=False  # Keep metrics from previous training
+    )
+
+def incremental_training(model, folder_path, selected_features, target, sequence_length=50, batch_size=32):
+    # Find all CSV files in the folder
+    csv_files = [os.path.join(folder_path, f) for f in os.listdir(folder_path) if f.endswith('.csv')]
+
+    # Train model on each file incrementally
+    for csv_file_path in csv_files:
+        print(f"Training on file: {csv_file_path}")
+        train_on_file(model, csv_file_path, selected_features, target, sequence_length, batch_size)
+
+    print("Training complete!")
 
 
+'''
 df = time_till_next_failure(file_path, features)
 # Example usage of the generator:
 target = ['time_till_failure']
-batch_size = 16
-sequence_length = 50
-steps_per_epoch = (len(df) - sequence_length) // batch_size
+batch_size = 32
+sequence_length = 60
+steps_per_epoch = (len(df) - sequence_length ) // (batch_size)
 batch_generator = sequence_batch_generator(df, features, target, sequence_length, batch_size)
 
 model = create_model(sequence_length, len(features))
@@ -137,3 +168,4 @@ model.summary()
 model.fit(batch_generator, 
           steps_per_epoch=steps_per_epoch, 
           epochs=10)  # Adjust the number of epochs as needed
+'''
