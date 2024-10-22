@@ -24,7 +24,7 @@ After navigating to the predictai folder, you need to set up a Python virtual en
 Ensure your Python version is 3.11:
 ```bash
 python --version
-```
+``` 
 
 Install virtualenv if it's not already installed:
 ```bash
