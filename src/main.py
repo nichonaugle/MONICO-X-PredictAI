@@ -3,7 +3,6 @@ import uvicorn
 from services import MDNSService
 from util import get_server_port, get_ip_addr
 from api import run_server
-from dotenv import load_dotenv
 
 mdns = MDNSService()
 # Testing Code
