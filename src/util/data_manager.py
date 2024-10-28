@@ -1,123 +1,158 @@
 import pandas as pd
 from datetime import datetime
+import numpy as np
+import logging
+import os
+
+# setting up logging configuration
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 def preprocess(file_name, new_file_name, encodings):
+    # try each encoding to read the original file and write it as a new utf-8 encoded file
+    
+    # validate the input filename
+    if not os.path.isfile(file_name):
+        raise FileNotFoundError(f"{file_name} does not exist or is not a file.")
+    
+    if not file_name.endswith('.csv'):
+        raise ValueError(f"{file_name} is not a valid CSV file.")
+    
+    
     for encoding in encodings:
         try:
+            # open the original file in read mode and the new file in write mode
             with open(file_name, 'r', encoding=encoding) as f1, open(new_file_name, 'w', encoding="utf-8") as f2:
                 for line in f1:
-                    line = line.replace('"', "")  # removing the double quotes in each line
+                    line = line.replace('"', "")  # remove double quotes in each line
                     f2.write(line)  # writing the new line to the new file
-            return
+            logging.info(f"file {file_name} successfully read with encoding {encoding} and saved as {new_file_name}.")
+            return  # if successful, exit the function
         except UnicodeDecodeError:
-            continue
-    raise UnicodeDecodeError(f"Unable to read the file {file_name} with provided encodings.") #just in case the encoding does not work
+            logging.warning(f"failed to read file {file_name} with encoding {encoding}. trying next encoding.")
+        except IOError as e:
+            logging.error(f"i/o error occurred: {e}")
+            raise  # re-raise if i/o fails
+    raise UnicodeDecodeError(f"unable to read the file {file_name} with provided encodings.")
 
-    
-#function to check through different encodings as each file has different mainly utf-8
 def read_csv_with_fallback(filename, encodings):
+    # to read the csv using different encodings until successful
     for encoding in encodings:
         try:
-            return pd.read_csv(filename, encoding=encoding) #going to try the encoding
+            logging.info(f"trying to read {filename} with encoding {encoding}.")
+            return pd.read_csv(filename, encoding=encoding)
         except UnicodeDecodeError:
-            continue
-    raise UnicodeDecodeError(f"Unable to read the file {filename} with provided encodings.")
-
-    
-#going to store the non-numerical values in different columns with the assigned names
+            logging.warning(f"failed to read {filename} with encoding {encoding}.")
+        except FileNotFoundError:
+            logging.error(f"file not found: {filename}")
+            raise  # re-raise for critical file errors
+        except pd.errors.ParserError:
+            logging.error(f"parsing error in {filename}")
+            raise  # raise if csv structure is broken
+    raise UnicodeDecodeError(f"unable to read the file {filename} with provided encodings.")
 
 def find_and_store_non_numerical(df):
-    # dictionary to store non-numeric values for each column
+    # creating a dictionary to store non-numeric values for each column
     non_numeric_data = {col: ['' for _ in range(len(df))] for col in df.columns[1:]}
-
-    # iterating over the DataFrame columns, starting from the second column (assuming 'Timestamp' is first)
+    # iterating over the dataframe columns, starting from the second column (assuming 'timestamp' is first)
     for column in df.columns[1:]:
-        # converting each column to numeric, forcing errors to NaN
-        non_numeric = pd.to_numeric(df[column], errors='coerce')
-        
-        #NaN is going to fill the non-numerical values so that it does not count while averaging the data
-        
-        # getting the indices where non-numeric values were found
-        non_numeric_indices = non_numeric[non_numeric.isna()].index
-        
-        # for each index with non-numeric values, append the value to the corresponding position in non_numeric_data
-        for idx in non_numeric_indices:
-            non_numeric_data[column][idx] = df.loc[idx, column]
-        
-        # replacing the non-numeric values in the original column with NaN
-        df[column] = non_numeric
-
-    # creating new columns in the DataFrame for each column that had non-numeric values
+        try:
+            # converting each column to numeric, forcing errors to nan
+            non_numeric = pd.to_numeric(df[column], errors='coerce')
+            # getting the indices where the non-numeric entries are found
+            non_numeric_indices = non_numeric[non_numeric.isna()].index
+            # for each index with non-numeric values, store the value to the corresponding position in non_numeric_data
+            for idx in non_numeric_indices:
+                non_numeric_data[column][idx] = df.loc[idx, column]
+            # replacing the non-numeric values in the original column with nan
+            df[column] = non_numeric
+        except Exception as e:
+            logging.warning(f"failed to process column {column}: {e}")
+    # creating new columns in the dataframe for each column that had non-numeric values
     for column, values in non_numeric_data.items():
-        #adding the column only if non-numerical values are present
-        if any(values):  
+        if any(values):  # only add the column if it contains non-numeric data
             df[f'Non_Numeric_Values_{column}'] = values
-
+    logging.info("non-numeric values identified and stored in new columns.")
     return df
 
-#code for a different timestamp
-# df = pandas.read_csv(filename)  #reading the source data file
-# df2 = df.groupby('TimeStamp').mean() #calculating the mean of the data depending on the Timestamp
-# df2.to_csv("C:/Users/digvi/OneDrive/Desktop/ECEN 403/C4701 1 Day Data Output.csv") #exporting the new file into a csv file
-
-# print(df2.head())
-
-# df2 = df['TimeStamp']
-# df3 = df2.apply(lambda x:datetime.strptime(x, '%m/%d/%Y %H:%M').timestamp()) ## changing the timestamp into a number
-# df2.head(70)
-# df2.apply(date.fromtimestamp)
-
-# df['TimeStamp'] = df3//300
-# df.head(10)
-# df.groupby('TimeStamp').mean()
-
-def detect_fault_relay(df):
-    # checking if the column 'Ramsey C4701E.Fault Relay' exists in the DataFrame
-    if 'Ramsey C4701E.Fault Relay' in df.columns:
-        # finding rows where the Fault Relay is 1 and print the corresponding Timestamp
-        fault_times = df[df['Ramsey C4701E.Fault Relay'] == 1]['Timestamp']
-        if not fault_times.empty:
-            print(f"Fault detected at the following times:\n{fault_times.to_list()}")
-        else:
-            print("No faults detected.")
+def print_faulty_entries(df):
+    # checks for faulty machines indicated by '1' in the ramsey c4701e.fault relay column
+    if 'Ramsey C4701E.Fault Relay' not in df.columns:
+        logging.error("column 'ramsey c4701e.fault relay' not found in the dataframe.")
+        return  # exit if column is not found
+    # check for rows with a '1' in the fault relay column
+    faulty_entries = df[df['Ramsey C4701E.Fault Relay'] == 1]
+    # if there are faulty entries found, that is '1' which means that the machine has failed
+    if not faulty_entries.empty:
+        print("When fault relay is 1 (component has failed):")
+        for index, row in faulty_entries.iterrows():
+            try:
+                # getting the timestamp
+                timestamp = row['Timestamp']
+                # getting non-numeric values for that row
+                non_numeric_values = {col: row[col] for col in df.columns if pd.isna(pd.to_numeric(row[col], errors='coerce'))}
+                # printing the timestamp and only the non-numeric values
+                if non_numeric_values:  # only print if there are non-numeric values
+                    print(f"timestamp: {timestamp}, non-numeric values: {non_numeric_values}")
+                else:
+                    print(f"timestamp: {timestamp}, no non-numeric values found.")
+            except Exception as e:
+                logging.warning(f"error while processing faulty entry at index {index}: {e}")
     else:
-        print("'Ramsey C4701E.Fault Relay' column not found in the data.")
+        print("no faulty entries found in 'ramsey c4701e.fault relay'.")
 
 def average_data(input_filename, output_filename, duration_user):
     encodings = ["utf-8", "utf-16", "cp1252"]
-    df = read_csv_with_fallback(input_filename, encodings)
+    try:
+        df = read_csv_with_fallback(input_filename, encodings)
+    except Exception as e:
+        logging.error(f"failed to load csv file: {e}")
+        return
     
     # finding non-numeric values and store them in new columns
     df = find_and_store_non_numerical(df)
+    try:
+        # taking in timestamp and calculate averages
+        df['Timestamp'] = df['Timestamp'].apply(lambda x: datetime.strptime(x, '%Y-%m-%dT%H:%M:%S').timestamp())  # converting the timestamp into a number
+        df['Timestamp'] = (df['Timestamp'] // duration_user) * duration_user  # round it down to the nearest multiple of duration_user
+        df_avg = df.groupby('Timestamp', as_index=False).mean()  # calculating the mean for numeric columns
+        # converting the timestamp back to a readable format
+        df_avg['Timestamp'] = df_avg['Timestamp'].apply(lambda x: datetime.fromtimestamp(x).strftime('%Y-%m-%dT%H:%M:%S'))
+    except Exception as e:
+        logging.error(f"failed to process timestamps: {e}")
+        return
     
-    # processing Timestamp and calculate averages
-    df['Timestamp'] = df['Timestamp'].apply(lambda x: datetime.strptime(x, '%Y-%m-%dT%H:%M:%S').timestamp())  # Convert the timestamp into a number
-    df['Timestamp'] = (df['Timestamp'] // duration_user) * duration_user  # Round down to nearest multiple of duration_user
-    df_avg = df.groupby('Timestamp', as_index=False).mean()  # Calculate the mean for numeric columns
-    
-    # converting the timestamp back to a readable format
-    df_avg['Timestamp'] = df_avg['Timestamp'].apply(lambda x: datetime.fromtimestamp(x).strftime('%Y-%m-%dT%H:%M:%S'))
-    
-    # adding the Non_Numeric_Values from the original DataFrame to the averaged DataFrame
+    # adding the non_numeric_values from the original dataframe to the averaged dataframe
     for column in df.columns:
         if column.startswith("Non_Numeric_Values_"):
             # using `first()` here assumes that all non-numeric values in each group are the same
             df_avg[column] = df.groupby('Timestamp')[column].first().reset_index(drop=True)
     
-    # saving the averaged data along with non-numeric values
-    df_avg.to_csv(output_filename, index=False)
+    try:
+        # saving the averaged data along with non-numeric values
+        df_avg.to_csv(output_filename, index=False)
+        logging.info(f"averaged data saved to {output_filename}.")
+    except IOError as e:
+        logging.error(f"i/o error when saving file: {e}")
 
 if __name__ == "__main__":
     input_filename = r"C:\Users\digvi\OneDrive\Desktop\ECEN 403\Export_20220111T000000_20220111T235959.csv"
     output_filename = input_filename + ".out.csv"
     duration_user = 300  # duration in seconds can be changed
+    new_input_filename = input_filename + ".new.csv"  # creates a new csv file with actual columns unlike the original csv file
+    encodings = ["utf-8", "utf-16", "cp1252"]
 
-    # new CSV file after preprocessing with no "" and will be in column format instead of 1 row format as the original file
-    
-    new_input_filename = input_filename + ".new.csv"  
-
-    encodings = ["utf-8", "utf-16", "cp1252"] #all the encodings which will be checked
+    logging.info("starting preprocessing...")
     preprocess(input_filename, new_input_filename, encodings)  # preprocessing the input file
+
+    logging.info("calculating average data...")
     average_data(new_input_filename, output_filename, duration_user)  # calculating the average data
 
-    print(f"Processed data saved to {output_filename}")
+    logging.info("printing faulty entries...")
+    try:
+        df_final = read_csv_with_fallback(new_input_filename, encodings)  # reads the newly preprocessed file again for final checks
+        print_faulty_entries(df_final)  # printing any faulty entries found
+    except Exception as e:
+        logging.error(f"error while reading or printing faulty entries: {e}")
+
+    print(f"processed data saved to {output_filename}")  # prints if everything is successful
+    logging.info("process completed successfully.")
