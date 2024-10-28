@@ -4,7 +4,7 @@ import numpy as np
 import logging
 import os
 
-# setting up logging configuration
+# setting up logging configuration 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 def preprocess(file_name, new_file_name, encodings):
