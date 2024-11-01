@@ -8,7 +8,7 @@ import os
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # Define file and processing settings directly in the code for clarity
-input_filename = "C:/Users/digvi/OneDrive/Desktop/ECEN 403/Export_20220111T000000_20220111T235959.csv"
+input_filename = r"C:\Users\digvi\OneDrive\Desktop\ECEN 403\Export_20220111T000000_20220111T235959.csv"
 output_filename = input_filename + ".out.csv"  # Name for the output file
 duration_user = 300  # Define the duration in seconds for averaging interval
 new_input_filename = input_filename + ".new.csv"  # Temporary file for cleaned data
@@ -125,11 +125,19 @@ def average_data(input_filename, output_filename, duration_user):
     try:
         # Convert the 'Timestamp' column into a numeric format
         df['Timestamp'] = df['Timestamp'].apply(lambda x: datetime.strptime(x, '%Y-%m-%dT%H:%M:%S').timestamp())
+        
+        # Check if duration_user is valid (greater than zero)
+        if duration_user <= 0:
+            raise ValueError("Duration for averaging must be greater than zero.")
+        
         # Round down to the nearest multiple of duration_user
         df['Timestamp'] = (df['Timestamp'] // duration_user) * duration_user
         df_avg = df.groupby('Timestamp', as_index=False).mean()  # Calculate the mean for numeric columns
         # Convert the timestamp back to a readable format
         df_avg['Timestamp'] = df_avg['Timestamp'].apply(lambda x: datetime.fromtimestamp(x).strftime('%Y-%m-%dT%H:%M:%S'))
+    except ValueError as e:
+        logging.error(f"Value error: {e}")
+        return
     except Exception as e:
         logging.error(f"Failed to process timestamps: {e}")
         return
