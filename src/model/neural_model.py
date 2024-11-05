@@ -3,13 +3,17 @@ import pandas as pd
 import sklearn
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import mean_squared_error
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense, Dropout
+from tensorflow.keras.layers import LSTM, Dense, Dropout, Input
+from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.models import load_model
+from sklearn.metrics import mean_absolute_error, r2_score
 
-file_path = r"D:\UnzippedMonicoData\2023\Export_20230102T000000_20230102T235959.csv"
+file_path = r"D:\UnzippedMonicoData\FilesWithFailure2022"
 features = ['0718.1st_Stage_A_Discharge_Pressure','0718.1st_Stage_A_Suction_Pressure','0718.Acceleration_Ramp_Rate','0718.Actual_Air_Fuel_Ratio',
                    '0718.Actual_Engine_Timing','0718.Actual_Intake_Manifold_Air_Pressure','0718.Air_to_Fuel_Differential_Pressure','0718.Average_Combustion_Time',
                    '0718.Choke_Compensation_Percentage','0718.Choke_Gain_Percentage','0718.Choke_Position_Command','0718.Choke_Stability_Percentage','0718.Compressor_Oil_Pressure',               
@@ -46,126 +50,176 @@ features = ['0718.1st_Stage_A_Discharge_Pressure','0718.1st_Stage_A_Suction_Pres
 def create_model(time_steps, num_features):
     # Define Sequential model
     model = Sequential([
-        LSTM(units=128, activation='tanh', input_shape=(time_steps, num_features), return_sequences=True),
-        Dropout(0.4),
+        Input(shape=(time_steps, num_features)),
+        LSTM(units=128, activation='tanh', return_sequences=True),
+        Dropout(0.3),
         LSTM(units=64, activation='tanh'),
-        Dropout(0.4),
+        Dropout(0.3),
         Dense(units=1)  
     ])
-
-    # Compile the model
-    model.compile(optimizer='adam', loss='mean_squared_error')
-
-    # Return model
+    
     return model
 
 def run_model() -> str:
     return {"Model Run Output": "TEST"}
 
-def time_till_next_failure(csv_file_path, scaled_features):
-    # Read csv into pandas data frame and fix the Active Codes dtype
-    df = pd.read_csv(csv_file_path, encoding = 'utf-16', dtype = {'Ramsey C4701E.Engine Active Codes': str})
+def time_till_next_failure(csv_file_path, failure_times_file, scaled_features):
+    # Read main CSV into pandas DataFrame
+    df = pd.read_csv(csv_file_path, encoding='utf-16', dtype={'Ramsey C4701E.Engine Active Codes': str}, low_memory=False)
     df['Ramsey C4701E.Engine Active Codes'] = df['Ramsey C4701E.Engine Active Codes'].fillna('None')
-    # Ensure the timestamp is in a datetime format
+
+    # Handle non-numeric values in 'Ramsey C4701E.Fault Relay' by replacing them with NaN, then fill NaNs with 0
+    df['Ramsey C4701E.Fault Relay'] = pd.to_numeric(df['Ramsey C4701E.Fault Relay'], errors='coerce').fillna(0)
+
+    # Ensure the timestamp is in datetime format and set it as the index
     df['Timestamp'] = pd.to_datetime(df['Timestamp'])
     df.set_index('Timestamp', inplace=True)
-    # Drop non numeric columns for averaging
+
+    # Drop non-numeric columns for averaging
     numeric_col = df.select_dtypes(include='number').columns
     df = df[numeric_col].resample('10s').mean()
+
     # Apply scaling
     scaler = MinMaxScaler(feature_range=(0, 1))
     df[scaled_features] = df[scaled_features].ffill()
     df[scaled_features] = scaler.fit_transform(df[scaled_features])
+
+    # Load external failure timestamps from the failure times file
+    external_failures = pd.read_csv(failure_times_file, parse_dates=['Timestamp'])
+    external_failure_times = external_failures['Timestamp'].sort_values()
+
+    # Combine internal and external failure timestamps
+    failure_indices = pd.Index(df[df['Ramsey C4701E.Fault Relay'] == 1].index.union(external_failure_times))
+
     # Initialize a new column for time till next failure
     time_till_failure = [-1.0] * len(df)
-    # Find indices where failure occurs
-    failure_indices = df[df['Ramsey C4701E.Fault Relay'] == 1].index
-    # Loop through data frame
+
+    # Loop through the DataFrame to calculate time until the next failure
     for i in range(len(df)):
-        # Get timestamp of current row 
+        # Get the current timestamp
         current_timestamp = df.index[i]
-        # All future failures after the the rows index
+        # Find the next failure time from combined failure indices
         future_failures = failure_indices[failure_indices > current_timestamp]
         if not future_failures.empty:
-            # Find the next failure
+            # Get the nearest future failure
             next_failure_index = future_failures.min()
-            # Caluclate the difference in hours
+            # Calculate the time difference in hours
             time_difference = (next_failure_index - current_timestamp).total_seconds() / 3600
             time_till_failure[i] = time_difference
-          
-    # Use head to display results to verify
-    df = pd.concat([df, pd.Series(time_till_failure, index=df.index, name='time_till_failure')], axis=1)
-    print(df[[ 'time_till_failure', '0718.1st_Stage_A_Discharge_Pressure']].head(20))
+
+    # Add the calculated time till next failure as a new column in the DataFrame
+    df['time_till_failure'] = time_till_failure
+
+    # Print a sample of the calculated time till failure column to verify results
+    print(df[['time_till_failure']].head(20))  # Display the first 20 rows
+
     return df
 
 def sequence_batch_generator(df, selected_features, target, sequence_length, batch_size):
-    # Calculate total number of batches
-    num_batches = (len(df) - sequence_length) // (batch_size)
-    while True:
-    # Loop over batches
-        for batch_idx in range(num_batches):
-            sequences = []
-            targets = []
-        # Generate sequences for each batch
+    num_sequences = len(df) - sequence_length
+    num_batches = num_sequences // batch_size
+    for batch_idx in range(num_batches):
+        sequences = []
+        targets = []
         for i in range(batch_size):
             start_idx = batch_idx * batch_size + i
             end_idx = start_idx + sequence_length
-            # Check for valid range and append sequence and tagrgets to list
             if end_idx < len(df):
                 seq = df.iloc[start_idx:end_idx][selected_features].values
                 label = df.iloc[end_idx][target].values[0]  
                 sequences.append(seq)
                 targets.append(label)
-            yield np.array(sequences), np.array(targets)
+        yield np.array(sequences), np.array(targets)
 
-def train_on_file(model, csv_file_path, selected_features, target, sequence_length, batch_size):
-   # Load data
-    df = time_till_next_failure(csv_file_path, selected_features)
-
-    # Generate batches using the generator
-    batch_gen = sequence_batch_generator(df, selected_features, target, sequence_length, batch_size)
-    steps_per_epoch = (len(df) - sequence_length) // (batch_size)
-
-    # Train the model on this file's data
-    model.fit(
-        batch_gen,
-        steps_per_epoch=steps_per_epoch,
-        epochs=1,  # Use only one epoch per file for incremental training
-        verbose=1,
-        reset_metrics=False  # Keep metrics from previous training
+def incremental_training(model, folder_path, selected_features, target, sequence_length, batch_size, save_path="model_Colab_1"):
+    # Compile it with a fresh optimizer
+    model.compile(optimizer='adam', loss='mean_squared_error')
+    # List all CSV files and sort them by date
+    csv_files = sorted([os.path.join(folder_path, f) for f in os.listdir(folder_path) if f.endswith('.csv')])
+    # Define Early Stopping Callback
+    early_stopping = EarlyStopping(
+        monitor='loss',
+        patience=3,
+        restore_best_weights=True
     )
-
-def incremental_training(model, folder_path, selected_features, target, sequence_length=50, batch_size=32):
-    # Find all CSV files in the folder
-    csv_files = [os.path.join(folder_path, f) for f in os.listdir(folder_path) if f.endswith('.csv')]
-
-    # Train model on each file incrementally
+    # Training phase
+    print("Starting training phase")
     for csv_file_path in csv_files:
         print(f"Training on file: {csv_file_path}")
-        train_on_file(model, csv_file_path, selected_features, target, sequence_length, batch_size)
+        
+        # Load and preprocess data
+        df = time_till_next_failure(csv_file_path, selected_features)
+        
+        # Initialize batch generator
+        batch_gen = sequence_batch_generator(df, selected_features, target, sequence_length, batch_size)
+        
+        # Calculate steps per epoch
+        steps_per_epoch = (len(df) - sequence_length) // batch_size
 
-    print("Training complete!")
+        # Incremental training on the batch generator
+        model.fit(
+            batch_gen,
+            steps_per_epoch=steps_per_epoch,
+            epochs=1,  
+            verbose=1
+#            callbacks=[early_stopping],
+        )
 
+    # Save the model after training on 2022 data
+    model.save(save_path)
+    print(f"Training complete! Model saved to {save_path}")
 
-'''
-df = time_till_next_failure(file_path, features)
-# Example usage of the generator:
-target = ['time_till_failure']
-batch_size = 32
-sequence_length = 60
-steps_per_epoch = (len(df) - sequence_length ) // (batch_size)
-batch_generator = sequence_batch_generator(df, features, target, sequence_length, batch_size)
+def evaluate_model_on_test_files(model_path, test_folder_path, selected_features, target, sequence_length, batch_size):
+    # Load the saved model
+    model = load_model(model_path)
+    print(f"Loaded model from {model_path}")
+    
+    # Gather all CSV files from the specified test folder
+    test_files = sorted([os.path.join(test_folder_path, f) for f in os.listdir(test_folder_path) if f.endswith('.csv')])
 
-model = create_model(sequence_length, len(features))
-model.compile(optimizer='adam', loss='mean_squared_error')
-# Print the model architecture
-X_batch, y_batch = next(batch_generator)
-print("X_batch shape:", X_batch.shape)
-print("y_batch shape:", y_batch.shape)
-print("Sample y_batch values:", y_batch[:10])
+    # Testing phase
+    print("\nStarting testing phase...")
+    y_true, y_pred = [], []
+    for csv_file_path in test_files:
+        print(f"Evaluating on file: {csv_file_path}")
+        
+        # Load and preprocess data
+        df = time_till_next_failure(csv_file_path, selected_features)
 
-model.summary()
-model.fit(batch_generator, 
-          steps_per_epoch=steps_per_epoch, 
-          epochs=10)  # Adjust the number of epochs as needed
-'''
+        # Generate sequences for testing
+        batch_gen = sequence_batch_generator(df, selected_features, target, sequence_length, batch_size)
+        
+        # Predict for each batch
+        for batch_idx, (X_batch, y_batch) in enumerate(batch_gen):
+            y_pred_batch = model.predict(X_batch)
+            y_true.extend(y_batch)
+            y_pred.extend(y_pred_batch.flatten())
+            if (batch_idx + 1) % 10 == 0:
+                print(f"Processed {batch_idx + 1} batches for current file")
+    
+    # Convert to numpy arrays for metric calculations
+    y_true = np.array(y_true)
+    y_pred = np.array(y_pred)
+
+    # Calculate metrics
+    mse = mean_squared_error(y_true, y_pred)
+    rmse = np.sqrt(mse)  # Root Mean Squared Error
+    mae = mean_absolute_error(y_true, y_pred)  # Mean Absolute Error
+    r2 = r2_score(y_true, y_pred)  # R-squared (coefficient of determination)
+
+    print(f"\nTesting complete! Metrics on test set:")
+    print(f"Mean Squared Error (MSE): {mse}")
+    print(f"Root Mean Squared Error (RMSE): {rmse}")
+    print(f"Mean Absolute Error (MAE): {mae}")
+    print(f"R-squared (R2 Score): {r2}")
+    
+    return {"mse": mse, "rmse": rmse, "mae": mae, "r2": r2}
+
+#target = ['time_till_failure']
+#batch_size = 32
+#sequence_length = 60
+#model = load_model(r"C:\Users\micha\ECEN403\MONICO-X-PredictAI\model_2.h5")
+#incremental_training(model, r"D:\UnzippedMonicoData\FilesWithFailure2023", features, target, sequence_length, batch_size, save_path="model_2.h5")  
+
+time_till_next_failure(r"D:\UnzippedMonicoData\2022\Export_20220110T000000_20220110T235959.csv", r"D:\UnzippedMonicoData\failure_times_2022.csv", features)
+
