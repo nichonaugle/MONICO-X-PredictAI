@@ -3,12 +3,14 @@ from datetime import datetime
 import numpy as np
 import logging
 import os
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # Set up logging configuration for output readability
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # Define file and processing settings directly in the code for clarity
-input_filename = r"C:\Users\digvi\OneDrive\Desktop\ECEN 403\Export_20220111T000000_20220111T235959.csv"
+input_filename = r"C:\Users\digvi\OneDrive\Desktop\ECEN 403\Export_20230106T000000_20230106T235959.csv"
 output_filename = input_filename + ".out.csv"  # Name for the output file
 duration_user = 300  # Define the duration in seconds for averaging interval
 new_input_filename = input_filename + ".new.csv"  # Temporary file for cleaned data
@@ -62,7 +64,7 @@ def read_csv_with_fallback(filename, encodings):
 def find_and_store_non_numerical(df):
     # Creates a dictionary to store non-numeric values for each column
     non_numeric_data = {col: ['' for _ in range(len(df))] for col in df.columns[1:]}  # Initialize storage for non-numeric values
-    # Iterate over the DataFrame columns, starting from the second column (assuming 'timestamp' is first)
+    # Iterate over the DataFrame columns, starting from the second column (assuming 'Timestamp' is first)
     for column in df.columns[1:]:
         try:
             # Convert each column to numeric, forcing errors to NaN
@@ -118,7 +120,7 @@ def average_data(input_filename, output_filename, duration_user):
         df = read_csv_with_fallback(input_filename, encodings)
     except Exception as e:
         logging.error(f"Failed to load CSV file: {e}")
-        return
+        return None  # Return None if loading fails
     
     # Finding non-numeric values and store them in new columns
     df = find_and_store_non_numerical(df)
@@ -137,10 +139,10 @@ def average_data(input_filename, output_filename, duration_user):
         df_avg['Timestamp'] = df_avg['Timestamp'].apply(lambda x: datetime.fromtimestamp(x).strftime('%Y-%m-%dT%H:%M:%S'))
     except ValueError as e:
         logging.error(f"Value error: {e}")
-        return
+        return None
     except Exception as e:
         logging.error(f"Failed to process timestamps: {e}")
-        return
+        return None
     
     # Adding the non-numeric values from the original DataFrame to the averaged DataFrame
     for column in df.columns:
@@ -154,6 +156,90 @@ def average_data(input_filename, output_filename, duration_user):
         logging.info(f"Averaged data saved to {output_filename}.")
     except IOError as e:
         logging.error(f"I/O error when saving file: {e}")
+    
+    return df_avg  # Return the averaged DataFrame for further analysis
+
+def data_analysis(df):
+    # Data Cleaning and Preprocessing Section
+    # Handle non-numeric data: Use categories for missing data and sensor issues
+    # Replace "No Data" with 'Missing' and "None" with 'Malfunction' for clarity
+    df.replace('No Data', 'Missing', inplace=True)
+    df.replace('None', 'Malfunction', inplace=True)
+    
+    # Replace these categories with NaN to allow numeric analysis where needed
+    df.replace(['Missing', 'Malfunction'], np.nan, inplace=True)
+    
+    # Outlier Detection for Key Metrics
+    
+    # Key metrics for outlier analysis - identifies potential issues in system performance
+    key_metrics = ['0718.1st_Stage_A_Discharge_Pressure', '0718.Actual_Air_Fuel_Ratio', '0718.System_Battery_Voltage']
+    
+    # Calculate IQR-based outliers to flag extreme values
+    outliers = {}
+    for metric in key_metrics:
+        if metric in df.columns:
+            metric_data = df[metric].dropna()
+            q1 = metric_data.quantile(0.25)
+            q3 = metric_data.quantile(0.75)
+            iqr = q3 - q1
+            lower_bound = q1 - 1.5 * iqr
+            upper_bound = q3 + 1.5 * iqr
+            outliers[metric] = metric_data[(metric_data < lower_bound) | (metric_data > upper_bound)]
+        else:
+            logging.warning(f"Metric {metric} not found in DataFrame columns.")
+    
+    # Visualize outliers using boxplots to see the spread of data points
+    plt.figure(figsize=(10, 6))
+    sns.boxplot(data=df[key_metrics])
+    plt.title("Outlier Detection for Key Metrics")
+    plt.xlabel("Metrics")
+    plt.ylabel("Values")
+    plt.show()
+    
+    # Statistical Analysis for Detailed Breakdown
+    
+    # Summary statistics for each sensor to show average, median, and spread
+    # Helps in understanding central tendency and variability in the readings
+    stats_summary = df.describe()
+    print(stats_summary)
+    
+    # Moving averages for trend analysis to spot seasonal patterns or shifts
+    for metric in key_metrics:
+        if metric in df.columns:
+            plt.figure(figsize=(12, 6))
+            plt.plot(df['Timestamp'], df[metric], label='Original Data')
+            plt.plot(df['Timestamp'], df[metric].rolling(window=10).mean(), label='10-point Moving Average', color='orange')
+            plt.xticks(rotation=45)
+            plt.legend(loc="best")
+            plt.title(f"Trend Analysis for {metric}")
+            plt.xlabel("Timestamp")
+            plt.ylabel(metric)
+            plt.show()
+        else:
+            logging.warning(f"Metric {metric} not found in DataFrame columns.")
+    
+    # Correlation Analysis to Reveal Relationships Between Sensors
+    
+    # Generate correlation matrix to explore variable relationships
+    # Useful for identifying dependencies or redundancies among metrics
+    numeric_cols = df.select_dtypes(include=[np.float64, np.int64]).columns
+    correlation_matrix = df[numeric_cols].corr()
+    
+    # Heatmap of correlation matrix for visual inspection of sensor relationships
+    plt.figure(figsize=(12, 10))
+    sns.heatmap(correlation_matrix, annot=False, cmap='coolwarm')
+    plt.title("Correlation Matrix of Sensor Readings")
+    plt.show()
+    
+    # Extract highly correlated pairs (> 0.7) to examine interdependencies
+    high_corr_vars = correlation_matrix[correlation_matrix.abs() > 0.7].stack().reset_index()
+    high_corr_vars = high_corr_vars[high_corr_vars['level_0'] != high_corr_vars['level_1']]
+    high_corr_vars.columns = ['Variable 1', 'Variable 2', 'Correlation']
+    high_corr_vars.drop_duplicates(inplace=True)
+    
+    # Display the high correlation pairs for further analysis
+    print("Highly correlated variable pairs:")
+    print(high_corr_vars)
 
 if __name__ == "__main__":
     # Main block to execute preprocessing, averaging, and fault checking
@@ -161,16 +247,20 @@ if __name__ == "__main__":
     preprocess(input_filename, new_input_filename, encodings)  # Preprocessing the input file
 
     logging.info("Calculating average data...")
-    average_data(new_input_filename, output_filename, duration_user)  # Calculating the average data
+    df_avg = average_data(new_input_filename, output_filename, duration_user)  # Calculating the average data
 
-    logging.info("Printing faulty entries...")
-    try:
-        # Read the newly preprocessed file again for final checks
-        df_final = read_csv_with_fallback(new_input_filename, encodings)
-        print_faulty_entries(df_final)  # Printing any faulty entries found
-    except Exception as e:
-        logging.error(f"Error while reading or printing faulty entries: {e}")
+    if df_avg is not None:
+        logging.info("Printing faulty entries...")
+        try:
+            # Read the newly preprocessed file again for final checks
+            df_final = read_csv_with_fallback(new_input_filename, encodings)
+            print_faulty_entries(df_final)  # Printing any faulty entries found
+        except Exception as e:
+            logging.error(f"Error while reading or printing faulty entries: {e}")
+        # Perform Data Analysis on the Averaged Data
+        logging.info("Performing data analysis on the averaged data...")
+        data_analysis(df_avg)
+    else:
+        logging.error("Data averaging failed. Skipping data analysis.")
 
-    print(f"Processed data saved to {output_filename}")  # Prints if
-
-#END
+    print(f"Processed data saved to {output_filename}")  # Notify user of saved processed data
