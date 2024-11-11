@@ -1,7 +1,7 @@
 import socket
 from zeroconf.asyncio import AsyncZeroconf, AsyncServiceInfo
 from zeroconf import IPVersion
-from util import get_ip_addr, get_mdns_device_name, get_mdns_service_type, get_mdns_service_name, get_server_port
+from util import get_ip_addr, get_mdns_device_name, get_mdns_service_type, get_mdns_service_name, get_server_port, get_mac_address
 
 DEFAULT_SERVICE_TYPE = "_predictai-ws._tcp.local."
 DEFAULT_SERVICE_NAME = "Monico PredictAI Hub"
@@ -26,7 +26,10 @@ class MDNSService:
             name=f"{self.service_name}.{self.service_type}",
             addresses=[socket.inet_aton(str(self.ip_addr))],
             port=int(self.port),
-            properties={"API Docs": f"{self.device_name}:{self.port}/docs"},
+            properties={
+                "API Docs": f"{self.device_name}:{self.port}/docs",
+                "Device MAC Address": f"{get_mac_address()}"
+                },
             server=f"{self.device_name}.local.",
         )
         self.zc_instance = None
