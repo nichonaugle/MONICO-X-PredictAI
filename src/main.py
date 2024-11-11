@@ -9,9 +9,16 @@ mdns = MDNSService()
 # python -m websockets ws://predictai-B5SBS/ws
 async def main():
     # Start the mDNS service and other asynchronous operations 
+    try:
+        await asyncio.gather(mdns.start(),run_server())
+    except KeyboardInterrupt:
+        print("Server interupted by user...")
+    finally:
+        await mdns.stop()
 
-    await asyncio.gather(mdns.start(),run_server())
-    
 if __name__ == "__main__":
     print("Launching PredictAI Server...")
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("Shutdown complete!")

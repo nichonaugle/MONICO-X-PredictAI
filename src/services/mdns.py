@@ -41,4 +41,4 @@ class MDNSService:
         # Unregister the service when done
         await self.zc_instance.async_unregister_all_services()
         await self.zc_instance.async_close()
-        print(f"Service {self.service_name} stopped.")
+        print(f"Service '{self.service_name}' stopped.")

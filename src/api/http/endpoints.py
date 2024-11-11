@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from util import get_server_port, get_mdns_service_name, get_ip_addr
-from model import run_model
+#from model import run_model
 
 router = APIRouter()
 
@@ -36,7 +36,6 @@ def get_classification_averaging_period():
 def get_classification_averaging_period():
     json_response = {"Data Averaging Interval": "5m"}
     return json_response
-
 
 @router.get("/ai/prediction_run/{interval}/{timeout}")
 def get_classification_averaging_period(interval: str, timeout: int):
