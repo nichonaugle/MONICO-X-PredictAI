@@ -25,7 +25,6 @@ class MyListener(ServiceListener):
 
 async def connect_to_service(hostname: str):  # TODO: Doesnt work
     uri = f"ws://{hostname}/ws"
-    print(uri)
     async with websockets.connect(uri) as websocket:
         print(f"Connected to WebSocket at {uri}")
         
