@@ -1,5 +1,6 @@
 from fastapi import APIRouter
-from util import get_server_port, get_mdns_service_name, get_ip_addr
+from util import get_server_port, get_mdns_service_name, get_ip_addr, get_mdns_device_name
+from api.ws import get_active_connections
 #from model import run_model
 
 router = APIRouter()
@@ -11,14 +12,12 @@ def get_device_active_tasks():
 
 @router.get("/device/info")
 def get_device_info():
-    clients_info = []
-
     json_response = {
-        "Name": "Test",
+        "Server Hostname": f"{get_mdns_device_name()}",
         "IP Address": f"{get_ip_addr()}",
         "Server Port": f"{get_server_port()}",
         "mDNS Service": f"{get_mdns_service_name()}",
-        "WebSocket Clients": "Not Avaliable"
+        "WebSocket Client Count": f"{len(get_active_connections())}"
         }
     return json_response
 

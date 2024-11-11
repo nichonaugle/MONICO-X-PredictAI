@@ -4,6 +4,9 @@ from .connection_manager import ConnectionManager
 router = APIRouter()
 connection_manager = ConnectionManager()
 
+def get_active_connections() -> list[WebSocket]:
+    return connection_manager.active_connections
+
 @router.websocket("/ws")
 async def websocket_route(websocket: WebSocket):
     await connection_manager.client_connect(websocket)
