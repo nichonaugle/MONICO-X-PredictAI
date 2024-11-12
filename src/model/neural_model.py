@@ -169,7 +169,7 @@ def incremental_training(model, folder_path, selected_features, target, sequence
     model.save(save_path)
     print(f"Training complete! Model saved to {save_path}")
 
-def evaluate_model_on_test_files(model_path, test_folder_path, selected_features, target, sequence_length, batch_size):
+def evaluate_model(model_path, test_folder_path, selected_features, target, sequence_length, batch_size):
     # Load the saved model
     model = load_model(model_path)
     print(f"Loaded model from {model_path}")
@@ -215,11 +215,11 @@ def evaluate_model_on_test_files(model_path, test_folder_path, selected_features
     
     return {"mse": mse, "rmse": rmse, "mae": mae, "r2": r2}
 
-#target = ['time_till_failure']
-#batch_size = 32
-#sequence_length = 60
-#model = load_model(r"C:\Users\micha\ECEN403\MONICO-X-PredictAI\model_2.h5")
-#incremental_training(model, r"D:\UnzippedMonicoData\FilesWithFailure2023", features, target, sequence_length, batch_size, save_path="model_2.h5")  
+target = ['time_till_failure']
+batch_size = 32
+sequence_length = 60
+model = load_model(r"C:\Users\micha\ECEN403\MONICO-X-PredictAI\model_2.h5")
+incremental_training(model, r"D:\UnzippedMonicoData\FilesWithFailure2023", features, target, sequence_length, batch_size, save_path="model_2.h5")  
 
-time_till_next_failure(r"D:\UnzippedMonicoData\2022\Export_20220110T000000_20220110T235959.csv", r"D:\UnzippedMonicoData\failure_times_2022.csv", features)
+
 
