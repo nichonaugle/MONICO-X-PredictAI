@@ -33,7 +33,6 @@ def get_mdns_device_name() -> str:
             print("Mdns service name added to server_config.json")
         else:
             name = config["MDNS_DEVICE_NAME"]
-            print(f"Set mdns service name from server_config.json as: '{name}'")
     return name
 
 def get_mdns_service_name() -> str:
@@ -53,3 +52,51 @@ def get_server_port() -> str:
         config = json.load(f)
         name = config["SERVER_PORT"]
     return name
+
+def set_data_streaming(value) -> None:
+    with open("./server_config.json", "r+") as f:
+        config = json.load(f)
+        if config["LIVE_STREAM"] != value:
+            config["LIVE_STREAM"] = value
+            f.seek(0)
+            json.dump(config, f, indent=4)
+            f.truncate()
+        print(f"Live streaming value set to: {value}")
+
+def get_data_streaming() -> bool:
+    with open("./server_config.json", "r") as f:
+        config = json.load(f)
+        state = config["LIVE_STREAM"]
+    return state
+
+def set_prediction_state(value) -> None:
+    with open("./server_config.json", "r+") as f:
+        config = json.load(f)
+        if config["PREDICTION_ACTIVE"] != value:
+            config["PREDICTION_ACTIVE"] = value
+            f.seek(0)
+            json.dump(config, f, indent=4)
+            f.truncate()
+        print(f"AI Prediction state set to: {value}")
+
+def get_prediction_state() -> bool:
+    with open("./server_config.json", "r") as f:
+        config = json.load(f)
+        state = config["PREDICTION_ACTIVE"]
+    return state
+
+def set_data_averaging_interval(value) -> None:
+    with open("./server_config.json", "r+") as f:
+        config = json.load(f)
+        if config["AVERAGING_INTERVAL"] != value:
+            config["AVERAGING_INTERVAL"] = value
+            f.seek(0)
+            json.dump(config, f, indent=4)
+            f.truncate()
+        print(f"Averaging interval set to: {value} seconds")
+
+def get_data_averaging_interval() -> bool:
+    with open("./server_config.json", "r") as f:
+        config = json.load(f)
+        state = config["AVERAGING_INTERVAL"]
+    return state
