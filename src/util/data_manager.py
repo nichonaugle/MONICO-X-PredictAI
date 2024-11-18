@@ -10,7 +10,7 @@ import seaborn as sns
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # Define file and processing settings directly in the code for clarity
-input_filename = r"C:\Users\digvi\OneDrive\Desktop\ECEN 403\Export_20230106T000000_20230106T235959.csv"
+input_filename = r"C:\Users\digvi\OneDrive\Desktop\ECEN 403\Export_20220111T000000_20220111T235959.csv"
 output_filename = input_filename + ".out.csv"  # Name for the output file
 duration_user = 300  # Define the duration in seconds for averaging interval
 new_input_filename = input_filename + ".new.csv"  # Temporary file for cleaned data
@@ -149,6 +149,15 @@ def average_data(input_filename, output_filename, duration_user):
         if column.startswith("Non_Numeric_Values_"):
             # Using `first()` here assumes that all non-numeric values in each group are the same
             df_avg[column] = df.groupby('Timestamp')[column].first().reset_index(drop=True)
+            
+            #for a different timestamp
+            # def average_data(input_filename, output_filename, duration_user): 
+#     df = pandas.read_csv(input_filename)
+#     df2 = df['TimeStamp'].apply(lambda x:datetime.strptime(x, '%m/%d/%Y %H:%M').timestamp()) ## changing the timestamp into a number
+#     df['TimeStamp'] = (df2 // duration_user) * duration_user ## retrun an integer instead of floating point ## 19//5 = 3 and 3*5 = 15
+#     df3 = df.groupby('TimeStamp', as_index = False).mean() ## calculating the mean
+#     df3['TimeStamp'] = df3['TimeStamp'].apply(lambda x:datetime.fromtimestamp(x).strftime('%m/%d/%Y %H:%M')) #converts the number back into timestamp
+#     df3.to_csv(output_filename)
     
     try:
         # Save the averaged data along with non-numeric values
