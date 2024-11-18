@@ -31,8 +31,8 @@ def get_device_info():
     return json_response
 
 @router.get("/data/set-averaging-interval-period")
-def get_classification_averaging_period(state: int):
-    set_data_averaging_interval(state)
+def get_classification_averaging_period(seconds: int):
+    set_data_averaging_interval(seconds)
     json_response = {"Data Averaging Interval": f"{get_data_averaging_interval()}"}
     return json_response
 

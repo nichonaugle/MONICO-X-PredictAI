@@ -31,8 +31,8 @@ async def connect_to_service(hostname: str):  # TODO: Doesnt work
         while True:
             response = await websocket.recv()
             print(f"Received: {response}")
-
-def main():        
+        
+def main():
     zeroconf = Zeroconf()
     listener = MyListener()
     browser = ServiceBrowser(zeroconf, f"{get_mdns_service_type()}", listener)
