@@ -27,7 +27,6 @@ app.include_router(http_router, prefix="", tags=["http"])
 app.include_router(ws_router, prefix="", tags=["websockets"])
 
 async def run_server():
-    #uvicorn.run(app, host=str(get_ip_addr()), port=int(get_server_port()))
     config = uvicorn.Config(app, host=str(get_ip_addr()), port=int(get_server_port()), reload=True)
     uvicorn_server = uvicorn.Server(config)
     await uvicorn_server.serve()

@@ -1,6 +1,9 @@
 {
-    "MDNS_DEVICE_NAME": "predictai-B5SBS",
+    "MDNS_DEVICE_NAME": "predictai-4QXX0",
     "MDNS_SERVICE_TYPE": "_predictai-ws._tcp.local.",
     "MDNS_SERVICE_NAME": "Monico PredictAI Hub",
-    "SERVER_PORT": "80"
+    "SERVER_PORT": "80",
+    "LIVE_STREAM": true,
+    "PREDICTION_ACTIVE": true,
+    "AVERAGING_INTERVAL": 5
 }
