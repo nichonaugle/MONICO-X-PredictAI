@@ -1,5 +1,6 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from .connection_manager import ConnectionManager
+from model import run_model
 from asyncio import sleep
 import random
 import aiofiles
@@ -25,8 +26,8 @@ async def websocket_route(websocket: WebSocket):
                 prediction_state = config["PREDICTION_ACTIVE"]
             await sleep(delay)
             if stream_state:
-                collected_data = random.randint(1, 100)
-                prediction = random.randint(1, 10) if prediction_state else "N/A"
+                formatted_data = random.randint(1, 100)  #TODO: add in the retrieval function for data preprocessing (formating)
+                prediction = run_model(formatted_data) if prediction_state else "N/A"
                 message = f"Collected Data: {collected_data}, Predicted Failure: {prediction} hrs"
                 await connection_manager.broadcast(message)
     except WebSocketDisconnect:

@@ -6,7 +6,7 @@ from sklearn.preprocessing import MinMaxScaler
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
-from tensorflow.keras.models import Sequential
+from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.layers import LSTM, Dense, Dropout
 
 file_path = r"D:\UnzippedMonicoData\2023\Export_20230102T000000_20230102T235959.csv"
@@ -43,6 +43,10 @@ features = ['0718.1st_Stage_A_Discharge_Pressure','0718.1st_Stage_A_Suction_Pres
                    '0718.Unfiltered_Engine_Oil_Pressure','0718.Wastegate_Compensation_Percentage','0718.Wastegate_Gain_Percentage','0718.Wastegate_Position_Command','0718.Wastegate_Stability_Percentage', '0718.Controller_Operating_Hours'
                   ]
 
+def init() -> None:
+    global model
+    model = load_model(os.getcwd() + "/src/model/trained/prediction_model.keras", compile = True)
+
 def create_model(time_steps, num_features):
     # Define Sequential model
     model = Sequential([
@@ -59,8 +63,9 @@ def create_model(time_steps, num_features):
     # Return model
     return model
 
-def run_model() -> str:
-    return {"Model Run Output": "TEST"}
+def run_model(data) -> str:
+    return model.predict(data)
+    #return {"Model Run Output": "TEST"}
 
 def time_till_next_failure(csv_file_path, scaled_features):
     # Read csv into pandas data frame and fix the Active Codes dtype
