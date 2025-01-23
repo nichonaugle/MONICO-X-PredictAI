@@ -1,1 +1,1 @@
-from .neural_model import run_model
+from .neural_model import run_model, init
