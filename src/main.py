@@ -13,7 +13,6 @@ model.init()
 async def main():
     # Start the mDNS service, load the tensorflow model, and other asynchronous operations 
     try:
-        #TODO: add in the loading of the modelfile. If it cannot be done in an async function, put it in the main function below.
         await asyncio.gather(mdns.start(),run_server())
     except KeyboardInterrupt:
         print("Server interupted by user...")
