@@ -1,1 +1,2 @@
-from .util import get_ip_addr, get_mdns_device_name, get_mdns_service_name, get_mdns_service_type, get_server_port, get_mac_address, set_data_streaming, get_data_streaming, set_prediction_state, get_prediction_state, set_data_averaging_interval, get_data_averaging_interval
+from .util import get_ip_addr, get_mdns_device_name, get_mdns_service_name, get_mdns_service_type, get_server_port, get_mac_address, set_data_streaming, get_data_streaming, set_prediction_state, get_prediction_state, set_data_sending_interval, get_data_sending_interval, get_data_averaging_interval
+from .data_collector import DataCollector

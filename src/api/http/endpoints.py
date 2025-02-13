@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from util import get_server_port, get_mdns_service_name, get_ip_addr, get_mdns_device_name, set_data_streaming, get_data_streaming, set_prediction_state, get_prediction_state, set_data_averaging_interval, get_data_averaging_interval
+from util import get_server_port, get_mdns_service_name, get_ip_addr, get_mdns_device_name, set_data_streaming, get_data_streaming, set_prediction_state, get_prediction_state, set_data_sending_interval, get_data_sending_interval
 from api.ws import get_active_connections
 #from model import run_model
 
@@ -25,15 +25,15 @@ def get_device_info():
         "mDNS Service": f"{get_mdns_service_name()}",
         "WebSocket Client Count": f"{len(get_active_connections())}",
         "Data Live Streaming": f"{get_data_streaming()}",
-        "Data Averaging Interval": f"{get_data_averaging_interval()}",
+        "Data Averaging Interval": f"{get_data_sending_interval()}",
         "AI Prediction State": f"{get_prediction_state()}"
         }
     return json_response
 
-@router.get("/data/set-averaging-interval-period")
-def get_classification_averaging_period(seconds: int):
-    set_data_averaging_interval(seconds)
-    json_response = {"Data Averaging Interval": f"{get_data_averaging_interval()}"}
+@router.get("/data/set-sending-interval-period")
+def get_classification_sending_period(seconds: int):
+    set_data_sending_interval(seconds)
+    json_response = {"Data Sending Interval": f"{get_data_sending_interval()}"}
     return json_response
 
 @router.get("/ai/set-prediction-state")

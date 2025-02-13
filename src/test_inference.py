@@ -1,6 +1,7 @@
 import numpy as np
 import os
-from tensorflow.keras.models import load_model
+import asyncio
+#from tensorflow.keras.models import load_model
 
 features = ['0718.1st_Stage_A_Discharge_Pressure','0718.1st_Stage_A_Suction_Pressure','0718.Acceleration_Ramp_Rate','0718.Actual_Air_Fuel_Ratio',
                    '0718.Actual_Engine_Timing','0718.Actual_Intake_Manifold_Air_Pressure','0718.Air_to_Fuel_Differential_Pressure','0718.Average_Combustion_Time',
@@ -34,7 +35,7 @@ features = ['0718.1st_Stage_A_Discharge_Pressure','0718.1st_Stage_A_Suction_Pres
                    '0718.Right_Bank_Average_Combustion_Time','0718.Right_Bank_Exhaust_Port_Temp','0718.Right_Bank_Turbine_Inlet_Temp','0718.Right_Bank_Turbine_Outlet_Temp','0718.Second_Desired_Timing','0718.Speed','0718.System_Battery_Voltage','0718.Total_Crank_Cycle_Time','0718.Total_Operating_Hours',
                    '0718.Unfiltered_Engine_Oil_Pressure','0718.Wastegate_Compensation_Percentage','0718.Wastegate_Gain_Percentage','0718.Wastegate_Position_Command','0718.Wastegate_Stability_Percentage', '0718.Controller_Operating_Hours'
                   ]
-
+"""
 # Assuming you have already trained and saved your model
 model = load_model(os.getcwd() + "/src/model/trained/prediction_model.keras")
 
@@ -49,6 +50,8 @@ input_data = np.reshape(data, (samples, 1, features))
 
 # Input the data into the model
 predictions = model.predict(input_data)
+"""
+from util.data_collector import DataCollector
 
-print(predictions)
-print(len(features))
+dc = DataCollector()
+asyncio.run(dc.start())
