@@ -13,7 +13,7 @@ model.init()
 async def main():
     # Start the mDNS service, load the tensorflow model, and other asynchronous operations 
     try:
-        await asyncio.gather(mdns.start(),run_server())
+        await asyncio.gather(mdns.start(),run_server(), start_data_collection())
     except KeyboardInterrupt:
         print("Server interupted by user...")
     finally:

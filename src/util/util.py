@@ -95,8 +95,8 @@ def set_data_averaging_interval(value) -> None:
             f.truncate()
         print(f"Averaging interval set to: {value} seconds")
 
-def get_data_averaging_interval() -> bool:
+def get_data_averaging_interval() -> int:
     with open("./server_config.json", "r") as f:
         config = json.load(f)
         state = config["AVERAGING_INTERVAL"]
-    return state
+    return int(state)
