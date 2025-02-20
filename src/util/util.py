@@ -85,18 +85,24 @@ def get_prediction_state() -> bool:
         state = config["PREDICTION_ACTIVE"]
     return state
 
-def set_data_averaging_interval(value) -> None:
+def set_data_sending_interval(value) -> None:
     with open("./server_config.json", "r+") as f:
         config = json.load(f)
-        if config["AVERAGING_INTERVAL"] != value:
-            config["AVERAGING_INTERVAL"] = value
+        if config["SENDING_INTERVAL"] != value:
+            config["SENDING_INTERVAL"] = value
             f.seek(0)
             json.dump(config, f, indent=4)
             f.truncate()
-        print(f"Averaging interval set to: {value} seconds")
+        print(f"Sending interval set to: {value} seconds")
 
-def get_data_averaging_interval() -> bool:
+def get_data_sending_interval() -> int:
+    with open("./server_config.json", "r") as f:
+        config = json.load(f)
+        state = config["SENDING_INTERVAL"]
+    return int(state)
+
+def get_data_averaging_interval() -> int:
     with open("./server_config.json", "r") as f:
         config = json.load(f)
         state = config["AVERAGING_INTERVAL"]
-    return state
+    return int(state)

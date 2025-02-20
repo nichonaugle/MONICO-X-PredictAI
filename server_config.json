@@ -4,6 +4,7 @@
     "MDNS_SERVICE_NAME": "Monico PredictAI Hub",
     "SERVER_PORT": "80",
     "LIVE_STREAM": true,
-    "PREDICTION_ACTIVE": true,
-    "AVERAGING_INTERVAL": 5
+    "PREDICTION_ACTIVE": false,
+    "AVERAGING_INTERVAL": 1,
+    "SENDING_INTERVAL": 10
 }
