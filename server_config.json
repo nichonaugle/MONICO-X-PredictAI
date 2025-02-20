@@ -6,5 +6,5 @@
     "LIVE_STREAM": true,
     "PREDICTION_ACTIVE": false,
     "AVERAGING_INTERVAL": 1,
-    "SENDING_INTERVAL": 10
+    "SENDING_INTERVAL": 1
 }

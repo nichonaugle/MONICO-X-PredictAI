@@ -25,7 +25,7 @@ async def broadcast_data(websocket):
             stream_state = config["LIVE_STREAM"]
             prediction_state = config["PREDICTION_ACTIVE"]
         if stream_state:
-            if data_collector.new_averaged_data_checker() and prediction_state:
+            if prediction_state and await data_collector.new_averaged_data_checker():
                 prediction = run_model(data_collector.running_averaged_data_array)
                 data_collector.set_new_data_as_read()
 

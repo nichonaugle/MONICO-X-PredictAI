@@ -6,23 +6,10 @@ import model
 from api import run_server
 import os
 
-mdns = MDNSService()
-
-model.init()
-# Testing Code
-# python -m websockets ws://predictai-B5SBS/ws
-async def main():
-    # Start the mDNS service, load the tensorflow model, and other asynchronous operations 
-    try:
-        await asyncio.gather(mdns.start(), run_server())#, data_collector.start())
-    except KeyboardInterrupt:
-        print("Server interupted by user...")
-    finally:
-        await mdns.stop()
-
 if __name__ == "__main__":
     print("Launching PredictAI Server...")
+    model.init()
     try:
-        asyncio.run(main())
+        asyncio.run(run_server())
     except KeyboardInterrupt:
         print("Shutdown complete!")
