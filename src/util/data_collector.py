@@ -43,7 +43,6 @@ class DataCollector:
                     else:
                         self.current_data_array = row
                         if self.buf_cycles == self.max_data_buf_size:
-                            print("Entered Loop")
                             for i in range(0, len(self.data_buf)):
                                 self.running_averaged_data_array[i] = self.data_buf[i] / self.max_data_buf_size
                                 self.data_buf[i] = 0 

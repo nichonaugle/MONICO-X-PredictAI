@@ -7,7 +7,6 @@ from api import run_server
 import os
 
 mdns = MDNSService()
-data_collector = DataCollector()
 
 model.init()
 # Testing Code
@@ -15,7 +14,7 @@ model.init()
 async def main():
     # Start the mDNS service, load the tensorflow model, and other asynchronous operations 
     try:
-        await asyncio.gather(mdns.start(),run_server(), data_collector.start())
+        await asyncio.gather(mdns.start(), run_server())#, data_collector.start())
     except KeyboardInterrupt:
         print("Server interupted by user...")
     finally:
