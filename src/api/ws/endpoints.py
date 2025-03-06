@@ -27,7 +27,7 @@ async def broadcast_data(websocket):
         if stream_state:
             if prediction_state and await data_collector.new_averaged_data_checker():
                 prediction = run_model(data_collector.running_averaged_data_array)
-                data_collector.set_new_data_as_read()
+                await data_collector.set_new_data_as_read()
 
             message = f"Collected Data: {data_collector.current_data_array}, Predicted Failure: {prediction} hrs"
             await connection_manager.broadcast(message)
