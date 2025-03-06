@@ -52,3 +52,4 @@ pip install -r requirements.txt
 ```
 
 NOTE: Before running "pip install (your-library)", please ensure you are inside of the virtual enviornment
+Make sure that the README gets updated with the config parameters as well!
