@@ -1,0 +1,9 @@
+version: '3.8'
+services:
+  monico-predictai:
+    build: .
+    ports:
+      - "8000:8000"
+      - "5353:5353"
+    volumes:
+      - .:/app
