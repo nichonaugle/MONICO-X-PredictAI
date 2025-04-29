@@ -4,8 +4,9 @@
 1. [Installation](#installation)
 2. [Usage](#usage)
 3. [API](#api)
-4. [Networking](#testing)
-5. [Contributing](#contributing)
+4. [Networking](#networking)
+5. [Model](#model)
+6. [Contributing](#contributing)
 
 ## Installation
 
@@ -53,6 +54,9 @@ The config.json file includes several networking parameters used to configure mD
 If you leave the MDNS_DEVICE_NAME as predictai-XXXXX, the device will automatically generate and resolve its hostname via mDNS.
 To access the FastAPI interface and test API endpoints, navigate to:
 http://<MDNS_DEVICE_NAME>:<SERVER_PORT>/docs
+
+## Model
+For more information about training and using the model, please navigate to /src/model/README_retraining.md
 
 ## Contributing
 
