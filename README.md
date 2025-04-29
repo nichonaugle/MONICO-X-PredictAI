@@ -1,55 +1,69 @@
 # MONICO-X-PredictAI
 
 ## Table of Contents
-1. [Python Enviornment Setup and API](#python-enviornment-setup)
-2. [Machine Learning Model](#machine-learning-model)
-3. [Data Management and Sorting for ML Training](#data-management-and-sorting-for-ml-training)
+1. [Installation](#installation)
+2. [Usage](#usage)
+3. [API](#api)
+4. [Networking](#networking)
+5. [Model](#model)
+6. [Contributing](#contributing)
 
----
+## Installation
 
-## Python Enviornment Setup
+1. **Cloning the Repository**:
+   ```bash
+   git clone https://github.com/nichonaugle/MONICO-X-PredictAI
+   cd MONICO-X-PREDICTAI
+   ```
 
-### 1. Cloning the Repository
+2. **Setting Up the Virtual Environment**:
+   - Ensure your Python version is 3.11.
+   - Install virtualenv if it's not already installed: `pip install virtualenv`.
+   - Create and activate the virtual environment:
+     - For Windows: `python -m venv venv` and `venv/Scripts/activate`.
+     - For macOS/Linux: `python -m venv venv` and `source venv/bin/activate`.
 
-To clone the project repository, run the following commands in your terminal:
+3. **Installing Requirements**:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-```bash
-git clone https://github.com/nichonaugle/MONICO-X-PredictAI
-cd MONICO-X-PREDICTAI
-```
+## Usage
 
-### 2. Setting Up the Virtual Environment
-After navigating to the predictai folder, you need to set up a Python virtual environment.
+Before running any commands, ensure you are inside the virtual environment.
 
-Ensure your Python version is 3.11:
-```bash
-python --version
-``` 
+## API
 
-Install virtualenv if it's not already installed:
-```bash
-pip install virtualenv
-```
+The API provides the following endpoints:
 
-Then create and activate the virtual environment:
+- `GET /server/active-tasks`: Retrieves the active tasks on the server.
+- `GET /server/set-streaming`: Sets the data live streaming state.
+- `GET /server/info`: Retrieves the device information.
+- `GET /data/set-sending-interval-period`: Sets the data sending interval period.
+- `GET /ai/set-prediction-state`: Sets the AI prediction state.
 
-For Windows:
-```bash
-python -m venv venv
-venv/Scripts/activate
-```
 
-For macOS/Linux:
-```bash
-python -m venv venv
-source venv/bin/activate
-```
+## Networking
+The config.json file includes several networking parameters used to configure mDNS on the local network:
 
-### 3. Installing Requirements
-Once the virtual environment is activated, install the required Python libraries:
-```bash
-pip install -r requirements.txt
-```
+- `"MDNS_DEVICE_NAME": "predictai-XXXXX"`
+- `"MDNS_SERVICE_TYPE": "_predictai-ws._tcp.local."`
+- `"SERVER_PORT": "8000"`
+- `"MDNS_SERVICE_NAME": "Monico PredictAI Hub"`
 
-NOTE: Before running "pip install (your-library)", please ensure you are inside of the virtual enviornment
-Make sure that the README gets updated with the config parameters as well!
+If you leave the MDNS_DEVICE_NAME as predictai-XXXXX, the device will automatically generate and resolve its hostname via mDNS.
+To access the FastAPI interface and test API endpoints, navigate to:
+http://<MDNS_DEVICE_NAME>:<SERVER_PORT>/docs
+
+## Model
+For more information about training and using the model, please navigate to /src/model/README_retraining.md
+
+## Contributing
+
+To contribute to the project, please follow these steps:
+
+1. Fork the repository.
+2. Create a new branch for your feature or bug fix.
+3. Make your changes and commit them.
+4. Push your changes to your forked repository.
+5. Submit a pull request to the main repository.
