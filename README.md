@@ -56,7 +56,7 @@ To access the FastAPI interface and test API endpoints, navigate to:
 http://<MDNS_DEVICE_NAME>:<SERVER_PORT>/docs
 
 ## Model
-For more information about training and using the model, please navigate to /src/model/README_retraining.md
+For more information about training and using the model, please navigate to README_retraining.md
 
 ## Contributing
 
