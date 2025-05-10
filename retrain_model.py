@@ -1,11 +1,70 @@
 
 import os
 import numpy as np
+import joblib
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, r2_score
+
+
+selected_features = limited_features = ['0718.Cylinder_04_Transformer_Secondary_Output', 
+                    '0718.Cylinder_03_Transformer_Secondary_Output',
+                    '0718.Cylinder_10_Transformer_Secondary_Output',
+                    '0718.Cylinder_06_Transformer_Secondary_Output',
+                    '0718.Cylinder_08_Transformer_Secondary_Output',
+                    '0718.Cylinder_01_Transformer_Secondary_Output',
+                    '0718.Compressor_Oil_Pressure',
+                    '0718.Cylinder_09_Transformer_Secondary_Output',
+                    '0718.Cylinder_05_Transformer_Secondary_Output',
+                    '0718.Engine_Speed',
+                    '0718.Speed',
+                    '0718.Desired_Air_Fuel_Ratio',
+                    '0718.Cylinder_07_Transformer_Secondary_Output',
+                    '0718.Actual_Air_Fuel_Ratio',
+                    '0718.Cylinder_12_Transformer_Secondary_Output',
+                    '0718.Cylinder_02_Transformer_Secondary_Output',
+                    '0718.Cylinder_11_Transformer_Secondary_Output',
+                    '0718.Wastegate_Position_Command',
+                    '0718.Fuel_Position_Command',
+                    '0718.Eng_Left_Pre-Catalyst_Temperature',
+                    '0718.Eng_Left_Post-Catalyst_Temperature',
+                    '0718.Eng_Right_Post-Catalyst_Temperature',
+                    '0718.Engine_Cylinder_01_Exhaust_Port_Temp',
+                    '0718.Eng_Right_Pre-Catalyst_Temperature',
+                    '0718.Right_Bank_Exhaust_Port_Temp',
+                    '0718.Engine_Average_Exhaust_Port_Temperature',
+                    '0718.Gas_Fuel_Flow',
+                    '0718.Engine_Cylinder_02_Exhaust_Port_Temp',
+                    '0718.Left_Bank_Exhaust_Port_Temp',
+                    '0718.Intake_Manifold_Air_Flow',
+                    '0718.Engine_Load_Factor',
+                    '0718.Air_to_Fuel_Differential_Pressure',
+                    '0718.Engine_Cylinder_06_Exhaust_Port_Temp',
+                    '0718.Engine_Cylinder_07_Exhaust_Port_Temp',
+                    '0718.Engine_Cylinder_10_Exhaust_Port_Temp',
+                    '0718.Engine_Cylinder_08_Exhaust_Port_Temp',
+                    '0718.Engine_Cylinder_05_Exhaust_Port_Temp',
+                    '0718.Engine_Cylinder_03_Exhaust_Port_Temp',
+                    '0718.Engine_Cylinder_09_Exhaust_Port_Temp',
+                    '0718.1st_Stage_A_Discharge_Pressure',
+                    '0718.Actual_Intake_Manifold_Air_Pressure',
+                    '0718.Inlet_Manifold_Air_Pressure',
+                    '0718.Cylinder_2_Rodload_Tension',
+                    '0718.Cylinder_1_Rodload_Tension',
+                    '0718.Cylinder_3_Rodload_Tension',
+                    '0718.Cylinder_4_Rodload_Tension',
+                    '0718.Engine_Cylinder_11_Exhaust_Port_Temp',
+                    '0718.Right_Bank_Average_Combustion_Time',
+                    '0718.Left_Bank_Average_Combustion_Time',
+                    '0718.Cylinder_3_Rodload_Compression',
+                    '0718.Cylinder_4_Rodload_Compression',
+                    '0718.Cylinder_2_Rodload_Compression',
+                    '0718.Cylinder_1_Rodload_Compression',
+                    '0718.Frame_Main_Bearing_3_Temperature',
+                    '0718.Frame_Main_Bearing_1_Temperature',
+                    '0718.Frame_Main_Bearing_2_Temperature',
+                    '0718.Engine_Oil_Pressure'
+]
 
 def add_time_until_failure_from_folder(folder_path, selected_features, fault_col="Ramsey C4701E.Fault Relay", 
                                        time_col="Timestamp", interval=30):
@@ -57,17 +116,16 @@ def add_time_until_failure_from_folder(folder_path, selected_features, fault_col
     return all_data
 
 
-def train_random_forest_for_failure(df, selected_features, target_col="Time_Until_Failure", random_state=42, n_estimators=75):
+def train_random_forest_for_failure(pkl_path, df, selected_features, target_col="Time_Until_Failure"):
     """
-    Train and evaluate a Random Forest model to predict time until failure.
+    Load a Random Forest model from a .pkl file and retrain it on new data.
 
     Args:
         df (pd.DataFrame): DataFrame with features and target.
         selected_features (list): Columns to use as features.
         target_col (str): Target column for regression.
-        random_state (int): Random seed for reproducibility.
-        n_estimators (int): Number of trees.
-
+        pkl_path (str): Path to the existing model .pkl file.
+ 
     Returns:
         model (RandomForestRegressor), metrics (dict): Trained model and evaluation metrics.
     """
@@ -80,31 +138,12 @@ def train_random_forest_for_failure(df, selected_features, target_col="Time_Unti
     y_train = df[target_col].iloc[:split_index]
     y_test = df[target_col].iloc[split_index:]
 
-    model = RandomForestRegressor(
-        n_estimators=n_estimators,
-        max_depth=20,
-        bootstrap=True,
-        random_state=random_state,
-        verbose=2,
-        max_features='log2',
-        min_samples_split=12,
-        min_samples_leaf=3,
-        n_jobs=-1
-    )
+    model = joblib.load(pkl_path)
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
 
     feature_importances = pd.DataFrame({"Feature": selected_features, "Importance": model.feature_importances_})
     feature_importances = feature_importances.sort_values(by="Importance", ascending=False)
-
-    plt.figure(figsize=(12, 36))
-    sns.barplot(x=feature_importances["Importance"], y=feature_importances["Feature"])
-    plt.xlabel("Feature Importance Score")
-    plt.ylabel("Features")
-    plt.title("Top Features Affecting Time Until Failure")
-    plt.xticks(rotation=0)
-    plt.yticks(fontsize=8)
-    plt.show()
 
     mae = mean_absolute_error(y_test, y_pred)
     r2 = r2_score(y_test, y_pred)
